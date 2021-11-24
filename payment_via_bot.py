@@ -27,6 +27,7 @@ def start_without_shipping_callback(update: Update, context: CallbackContext):
     """Sends an invoice without shipping-payment."""
     query = update.callback_query
     query.answer()
+    
     chat_id = update.message.chat_id
     title = "Payment Example"
     description = "Payment Example using python-telegram-bot"
@@ -93,12 +94,6 @@ def main() -> None:
     
     booking_id = 1
     
-    with open('DB.txt', 'r') as f:
-        db = f.read()
-    b = eval(db)
-    print(type(b))
-    print(db)
-
     updater = Updater(token)    
     dispatcher = updater.dispatcher
     updater.dispatcher.add_handler(CommandHandler('start', create_button))
