@@ -19,38 +19,63 @@ from textwrap import dedent
 from enum import Enum
 import os
 from dotenv import load_dotenv
+from rejson import Client, Path
 
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, KeyboardButton
 from telegram.ext import (
     Updater,
     CommandHandler,
     MessageHandler,
     Filters,
     ConversationHandler,
-    CallbackContext,
+    # CallbackContext,
 )
 
 logger = logging.getLogger(__name__)
+_database = None
 
 
 class States(Enum):
-    CHOOSE_STORAGE = 0
+    CHOOSE_STORAGE = 1
+
+
+def get_database_connection():
+    """Возвращает конекшн с базой данных Redis, либо создаёт новый, если он ещё не создан."""
+    global _database
+    if _database is None:
+        database_password = os.getenv("DB_PASSWORD", default=None)
+        database_host = os.getenv("DB_HOST", default='localhost')
+        database_port = os.getenv("DB_PORT", default=6379)
+        _database = Client(host=database_host, port=database_port,
+            password=database_password, decode_responses=True)
+    return _database
+
+
+def create_stogares_keyboard():
+    db = get_database_connection()
+    storages = db.jsonget('storages', Path.rootPath())
+    keyboard = []
+    for storage in storages:
+        print(storage)
+        keyboard.append(
+            [
+                KeyboardButton(
+                    text=f'{storage["name"]}({storage["address"]})'
+                ),
+            ],
+        )
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def start(update, context):
     
-    reply_keyboard = [['Склад 1', 'Склад 2', 'Склад 3']]
-
     update.message.reply_text(
         dedent('''\
         Привет!
         Я помогу вам арендовать личную ячейку для хранения вещей.
-        Давайте посмотрим адреса складов, чтобы выбрать ближайший!
+        Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!
         '''),
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
-            one_time_keyboard=True,
-        ),
+        reply_markup=create_stogares_keyboard()
     )
 
     return States.CHOOSE_STORAGE
@@ -75,7 +100,10 @@ def run_bot(tg_token):
         entry_points=[CommandHandler('start', start)],
         states={
             States.CHOOSE_STORAGE: [
-                MessageHandler(Filters.text & ~Filters.command, echo)
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    echo
+                )
             ],
         },
         fallbacks=[
