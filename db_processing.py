@@ -33,7 +33,12 @@ def create_stogares_keyboard():
                 ),
             ],
         )
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup
 
 
 def create_categories_keyboard():
@@ -41,7 +46,12 @@ def create_categories_keyboard():
         [KeyboardButton(text='Сезонные вещи')],
         [KeyboardButton(text='Другое')],
     ]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup
 
 
 def create_other_keyboard():
@@ -59,7 +69,12 @@ def create_other_keyboard():
                 ),
             ],
         )
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup
 
 
 def create_season_keyboard():
@@ -92,7 +107,12 @@ def create_season_keyboard():
                     )
                 ],
             )  
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup
 
 
 def get_bookings_count():
