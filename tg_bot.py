@@ -66,15 +66,7 @@ def handle_unknown(update, context):
     )
 
 
-def main():
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.INFO
-    )
-
-    load_dotenv()
-    tg_token = os.getenv('TG_TOKEN')
-
+def run_bot(tg_token):
     updater = Updater(tg_token)
 
     dispatcher = updater.dispatcher
@@ -90,11 +82,22 @@ def main():
             MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
     )
-
     dispatcher.add_handler(conv_handler)
 
     updater.start_polling()
     updater.idle()
+
+
+def main():
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+
+    load_dotenv()
+    tg_token = os.getenv('TG_TOKEN')
+
+    run_bot(tg_token)
 
 
 if __name__ == '__main__':
