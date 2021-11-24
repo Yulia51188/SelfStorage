@@ -59,7 +59,8 @@ def create_stogares_keyboard():
         keyboard.append(
             [
                 KeyboardButton(
-                    text=f'{storage["name"]}({storage["address"]})'
+                    text=(f'{storage["storage_id"]}. {storage["name"]}'
+                          f'({storage["address"]})')
                 ),
             ],
         )
