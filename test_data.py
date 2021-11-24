@@ -77,6 +77,21 @@ prices = [{
     ],
 }]
 
+booking_example = {
+    'storage_id': '2',
+    'tg_chat_id': 1967131305,
+    'booking_id': 0,
+    'category': 'season',
+    'item_id': '4',
+    'count': 0,
+    'period_type': 'week',
+    'period_lenght': 7,
+    'start_date': '24.11.21',
+    'total_cost': 1000,
+    'status': 'created',
+    'password': 'j3h4bdj'
+}
+
 
 def get_database_connection():
     """Возвращает конекшн с базой данных Redis, либо создаёт новый, если он ещё не создан."""
