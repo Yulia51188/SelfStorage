@@ -88,7 +88,7 @@ def create_other_keyboard():
         keyboard.append(
             [
                 KeyboardButton(
-                    text=(f'{stuff["name"]} - {stuff["base_price"]} руб.'
+                    text=(f'{stuff["name"]} - {stuff["base_price"]} руб. '
                           f'(добавить еще + {stuff["add_one_price"]} руб.)')
                 ),
             ],
@@ -108,7 +108,7 @@ def create_season_keyboard():
                 [
                     KeyboardButton(
                         text=(
-                            f'{stuff["name"]}( '
+                            f'{stuff["item_id"]}. {stuff["name"]} ( '
                             f'{stuff["price"]["week"]} руб. в неделю или '
                             f'{stuff["price"]["month"]} руб. в месяц)'
                         )
@@ -120,7 +120,7 @@ def create_season_keyboard():
                 [
                     KeyboardButton(
                         text=(
-                            f'{stuff["name"]}( '
+                            f'{stuff["item_id"]}. {stuff["name"]} ( '
                             f'{stuff["price"]["month"]} руб. в месяц)'
                         )
                     )
@@ -162,6 +162,24 @@ def handle_storage_choice(update, context):
     return States.CHOOSE_CATEGORY
 
 
+def handle_season_choice(update, context):
+    add_category_to_booking('season')
+    update.message.reply_text(
+        'Выберите, какую вещь будете хранить',
+        reply_markup=create_season_keyboard()
+    ) 
+    return States.CHOOSE_STUFF
+
+
+def handle_other_choice(update, context):
+    add_category_to_booking('other')
+    update.message.reply_text(
+        'Выберите, какую вещь будете хранить',
+        reply_markup=create_other_keyboard()
+    )     
+    return States.CHOOSE_STUFF
+
+
 def create_new_booking(tg_message):
     global _booking
 
@@ -175,8 +193,13 @@ def create_new_booking(tg_message):
     db = get_database_connection()
     _booking['booking_id'] = db.jsonarrlen('bookings', Path.rootPath())
     logger.info(f'New booking is {_booking}')
-    # db.jsonarrappend('bookings', Path.rootPath(), _booking)
-    return
+
+
+def add_category_to_booking(category_name):
+    global _booking
+
+    _booking['category'] = category_name
+    logger.info(f'Update booking: {_booking}')    
 
 
 def run_bot(tg_token):
@@ -195,10 +218,20 @@ def run_bot(tg_token):
             ],
             States.CHOOSE_CATEGORY: [
                 MessageHandler(
+                    Filters.regex('^Сезонные вещи$'),
+                    handle_season_choice
+                ),
+                MessageHandler(
+                    Filters.regex('^Другое$'),
+                    handle_other_choice
+                )
+            ],
+            States.CHOOSE_STUFF: [
+                MessageHandler(
                     Filters.text & ~Filters.command,
                     echo
                 )
-            ],
+            ]
         },
         fallbacks=[
             MessageHandler(Filters.text & ~Filters.command, handle_unknown)
