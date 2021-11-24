@@ -56,7 +56,6 @@ def create_stogares_keyboard():
     storages = db.jsonget('storages', Path.rootPath())
     keyboard = []
     for storage in storages:
-        print(storage)
         keyboard.append(
             [
                 KeyboardButton(
