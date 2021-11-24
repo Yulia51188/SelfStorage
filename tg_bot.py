@@ -17,6 +17,7 @@ class States(Enum):
     CHOOSE_STORAGE = 1
     CHOOSE_CATEGORY = 2
     CHOOSE_STUFF = 3
+    INPUT_COUNT = 4
 
 
 def start(update, context):
@@ -70,6 +71,14 @@ def handle_other_choice(update, context):
     return States.CHOOSE_STUFF
 
 
+def handle_choose_stuff(update, context):
+    add_stuff_to_booking(update.message.text)
+    update.message.reply_text(
+        'Сколько вещей выбранного типа нужно хранить?'
+    )      
+    return States.INPUT_COUNT
+
+
 def create_new_booking(tg_message):
     global _booking
 
@@ -88,7 +97,15 @@ def add_category_to_booking(category_name):
     global _booking
 
     _booking['category'] = category_name
-    logger.info(f'Update booking: {_booking}')    
+    logger.info(f'Update booking: {_booking}')
+
+
+def add_stuff_to_booking(button_text):
+    global _booking
+    
+    stuff_id, *_ = button_text.split('.')
+    _booking['item_id'] = stuff_id
+    logger.info(f'Update booking: {_booking}')
 
 
 def run_bot(tg_token):
@@ -118,8 +135,14 @@ def run_bot(tg_token):
             States.CHOOSE_STUFF: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
-                    echo
+                    handle_choose_stuff
                 )
+            ],
+            States.INPUT_COUNT: [
+                MessageHandler(
+                    Filters.regex(r'^\d+$'),
+                    echo
+                ),
             ]
         },
         fallbacks=[
