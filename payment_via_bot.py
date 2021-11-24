@@ -25,10 +25,10 @@ def start_callback(update: Update, context: CallbackContext) -> None:
 
 def start_without_shipping_callback(update: Update, context: CallbackContext):
     """Sends an invoice without shipping-payment."""
-    query = update.callback_query
-    query.answer()
+#     query = update.callback_query
+#     query.answer()
     
-    chat_id = update.message.chat_id
+    chat_id = update.callback_query.message.chat_id
     title = "Payment Example"
     description = "Payment Example using python-telegram-bot"
     # select a payload just for you to recognize its the donation from your bot
