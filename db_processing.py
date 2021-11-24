@@ -115,6 +115,49 @@ def create_season_keyboard():
     return reply_markup
 
 
+def create_period_keyboard():
+    keyboard = [[
+        KeyboardButton(text='Неделя'),
+        KeyboardButton(text='Месяц'),
+    ]]
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup
+
+
+def create_booking_keyboard():
+    keyboard = [
+        [KeyboardButton(text='Забронировать')],
+        [KeyboardButton(text='Отмена')],
+    ]
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup    
+
+
 def get_bookings_count():
     db = get_database_connection()
     return db.jsonarrlen('bookings', Path.rootPath())
+
+
+def is_week_price_available(booking):
+    if booking["category"] == 'other':
+        return False
+    
+    db = get_database_connection()
+    all_stuffs = db.jsonget('prices', Path.rootPath())
+    season_stuffs = all_stuffs[0]['season']
+    for stuff in season_stuffs:
+        logger.info(stuff)
+        if str(stuff['item_id']) != str(booking['item_id']):
+            continue
+        chosen_stuff = stuff
+        break
+    logger.info(f'Stuff in booking is {chosen_stuff}')
+    return chosen_stuff['price']['week']

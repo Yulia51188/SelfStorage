@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import date
 from enum import Enum
 from textwrap import dedent
 
@@ -12,12 +13,17 @@ import db_processing
 logger = logging.getLogger(__name__)
 _booking = None
 
+MAX_PERIOD = {'season': 6, 'other': 12}
+
 
 class States(Enum):
     CHOOSE_STORAGE = 1
     CHOOSE_CATEGORY = 2
     CHOOSE_STUFF = 3
     INPUT_COUNT = 4
+    INPUT_PERIOD_TYPE = 5
+    INPUT_PERIOD_LENGHT = 6
+    INVITE_TO_BOOKING = 7
 
 
 def start(update, context):
@@ -42,6 +48,17 @@ def handle_unknown(update, context):
     update.message.reply_text(
         text='Извините, но я вас не понял :(',
     )
+
+
+def handle_cancel(update, context):
+    global _booking
+    _booking = None
+
+    update.message.reply_text(
+        'Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!',
+        reply_markup=db_processing.create_stogares_keyboard()
+    )
+    return States.CHOOSE_STORAGE
 
 
 def handle_storage_choice(update, context):
@@ -79,6 +96,59 @@ def handle_choose_stuff(update, context):
     return States.INPUT_COUNT
 
 
+def handle_input_count(update, context):
+    add_count_to_booking(update.message.text)
+    is_week = db_processing.is_week_price_available(_booking)
+
+    if is_week:
+        update.message.reply_text(
+            'Выберите подходящий тариф для оплаты хранения:',
+            reply_markup=db_processing.create_period_keyboard()
+        )      
+        return States.INPUT_PERIOD_TYPE
+    
+    add_period_type_to_booking(is_week=False)            
+    update.message.reply_text(
+        'Введите количество месяцев от 1 до 6'
+    ) 
+    return States.INPUT_PERIOD_LENGHT
+
+
+def handle_period_type(update, context):
+    is_week = update.message.text == 'Неделя'
+    add_period_type_to_booking(is_week)
+    period_type = is_week and 'недель' or 'месяцев'
+    update.message.reply_text(
+        f'Введите на сколько {period_type} понадобится хранение. '
+    ) 
+    return States.INPUT_PERIOD_LENGHT
+
+
+def handle_period_length(update, context):
+    global _booking
+    
+    input_period = int(update.message.text)
+    max_period = MAX_PERIOD[_booking['category']]
+    if (_booking['period_type'] == 'month' and input_period > max_period):
+        update.message.reply_text(
+            f'Максимальный период хранения {max_period} месяцев. '
+            'Введите период еще раз')
+        return States.INPUT_PERIOD_LENGHT
+    
+    add_period_length_to_booking(input_period)
+    add_booking_cost()
+
+    # TO DO: create pretty message with booking info
+    update.message.reply_text(
+        f'''
+        Ваше бронирование:
+        {_booking}
+        ''',
+        reply_markup=db_processing.create_booking_keyboard()
+    )
+    return States.INVITE_TO_BOOKING
+
+
 def create_new_booking(tg_message):
     global _booking
 
@@ -106,6 +176,41 @@ def add_stuff_to_booking(button_text):
     stuff_id, *_ = button_text.split('.')
     _booking['item_id'] = stuff_id
     logger.info(f'Update booking: {_booking}')
+
+
+def add_count_to_booking(count):
+    global _booking
+
+    _booking['count'] = int(count)
+    logger.info(f'Update booking: {_booking}')
+
+
+def add_period_type_to_booking(is_week=False):
+    global _booking
+
+    _booking['period_type'] = is_week and 'week' or 'month'
+    logger.info(f'Update booking: {_booking}')
+
+
+def add_period_length_to_booking(period_lenght, start_date=None):
+    global _booking
+
+    _booking['period_lenght'] = period_lenght
+
+    if not start_date:
+        _booking['start_date'] = date.today().strftime('%d.%m.%y')
+    else:
+        _booking['start_date'] = start_date
+    logger.info(f'Update booking: {_booking}')    
+
+
+def add_booking_cost():
+    # TO DO: add cost calculation
+    total_cost = 1000
+
+    global _booking
+    _booking['total_cost'] = total_cost
+    logger.info(f'Update booking: {_booking}')   
 
 
 def run_bot(tg_token):
@@ -140,12 +245,36 @@ def run_bot(tg_token):
             ],
             States.INPUT_COUNT: [
                 MessageHandler(
-                    Filters.regex(r'^\d+$'),
+                    Filters.regex(r'^[1-9]+$'),
+                    handle_input_count
+                ),
+            ],
+            States.INPUT_PERIOD_TYPE: [
+                MessageHandler(
+                    Filters.regex('^Неделя$'),
+                    handle_period_type
+                ),
+                MessageHandler(
+                    Filters.regex('^Месяц$'),
+                    handle_period_type
+                ),
+            ],
+            States.INPUT_PERIOD_LENGHT: [
+                MessageHandler(
+                    Filters.regex(r'^[1-9]+$'),
+                    handle_period_length
+                ),
+            ],
+            States.INVITE_TO_BOOKING: [
+                MessageHandler(
+                    Filters.regex('^Забронировать$'),
                     echo
                 ),
+       
             ]
         },
         fallbacks=[
+            MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
             MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
     )
