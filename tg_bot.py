@@ -24,6 +24,11 @@ class States(Enum):
     INPUT_PERIOD_TYPE = 5
     INPUT_PERIOD_LENGTH = 6
     INVITE_TO_BOOKING = 7
+    INPUT_NAME = 8
+    INPUT_PASSPORT = 9
+    INPUT_BIRTH_DATE = 10
+    INPUT_PHONE = 11
+    PAYMENT = 12
 
 
 def start(update, context):
