@@ -22,7 +22,7 @@ class States(Enum):
     CHOOSE_STUFF = 3
     INPUT_COUNT = 4
     INPUT_PERIOD_TYPE = 5
-    INPUT_PERIOD_LENGHT = 6
+    INPUT_PERIOD_LENGTH = 6
     INVITE_TO_BOOKING = 7
 
 
@@ -111,7 +111,7 @@ def handle_input_count(update, context):
     update.message.reply_text(
         'Введите количество месяцев от 1 до 6'
     ) 
-    return States.INPUT_PERIOD_LENGHT
+    return States.INPUT_PERIOD_LENGTH
 
 
 def handle_period_type(update, context):
@@ -121,7 +121,7 @@ def handle_period_type(update, context):
     update.message.reply_text(
         f'Введите на сколько {period_type} понадобится хранение. '
     ) 
-    return States.INPUT_PERIOD_LENGHT
+    return States.INPUT_PERIOD_LENGTH
 
 
 def handle_period_length(update, context):
@@ -133,7 +133,7 @@ def handle_period_length(update, context):
         update.message.reply_text(
             f'Максимальный период хранения {max_period} месяцев. '
             'Введите период еще раз')
-        return States.INPUT_PERIOD_LENGHT
+        return States.INPUT_PERIOD_LENGTH
     
     add_period_length_to_booking(input_period)
     add_booking_cost()
@@ -192,10 +192,10 @@ def add_period_type_to_booking(is_week=False):
     logger.info(f'Update booking: {_booking}')
 
 
-def add_period_length_to_booking(period_lenght, start_date=None):
+def add_period_length_to_booking(period_length, start_date=None):
     global _booking
 
-    _booking['period_lenght'] = period_lenght
+    _booking['period_length'] = period_length
 
     if not start_date:
         _booking['start_date'] = date.today().strftime('%d.%m.%y')
@@ -259,7 +259,7 @@ def run_bot(tg_token):
                     handle_period_type
                 ),
             ],
-            States.INPUT_PERIOD_LENGHT: [
+            States.INPUT_PERIOD_LENGTH: [
                 MessageHandler(
                     Filters.regex(r'^[1-9]+$'),
                     handle_period_length
