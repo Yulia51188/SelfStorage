@@ -165,7 +165,7 @@ def main():
     load_dotenv()
     db = get_database_connection()
 
-    load_test_data_to_db(db)
+    # load_test_data_to_db(db)
     print_db_content(db)    
 
     print('\nПримеры частичных запросов по ID или категории')    
