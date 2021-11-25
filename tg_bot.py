@@ -39,7 +39,7 @@ def start(update, context):
         Я помогу вам арендовать личную ячейку для хранения вещей.
         Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!
         '''),
-        reply_markup=db_processing.create_stogares_keyboard()
+        reply_markup=db_processing.create_storages_keyboard()
     )
 
     return States.CHOOSE_STORAGE

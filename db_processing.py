@@ -24,7 +24,7 @@ def get_database_connection():
     return _database
 
 
-def create_stogares_keyboard():
+def create_storages_keyboard():
     db = get_database_connection()
     storages = db.jsonget('storages', Path.rootPath())
     keyboard = []
