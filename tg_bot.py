@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
+import access_qrcode as qr
 import db_processing
+
 
 logger = logging.getLogger(__name__)
 _booking = None
@@ -171,6 +173,7 @@ def handle_confirm_booking(update, context):
     
     _booking['status'] = 'created'
     booking_id = db_processing.add_booking(_booking)
+    _booking['booking_id'] = booking_id
 
     update.message.reply_text(
         dedent(f'''\
@@ -242,6 +245,39 @@ def add_booking_cost():
     logger.info(f'Update booking: {_booking}')   
 
 
+def handle_qrcode(update, context):
+    global _booking
+
+    db = db_processing.get_database_connection()
+
+    # should be deleted
+    _booking['status'] = 'payed'
+
+    if _booking['status'] == 'payed':
+        client_id = _booking["client_id"]
+        passport_series_and_number = db_processing.get_passport_series_and_number(db, client_id)
+        
+        access_code = qr.create_access_code(passport_series_and_number)
+        _booking["access_code"] = access_code
+
+        db_processing.set_booking_access_code(
+            db, _booking["booking_id"],
+            access_code
+        )
+
+        message_text = (
+            f'Вот ваш электронный ключ для доступа к вашему личному складу. '
+            f'Вы сможете попасть на склад в любое время в период '
+            f'с {_booking["start_date"]} по {_booking["end_date"]}'
+        )
+        context.bot.send_message(chat_id=client_id, text=message_text)
+
+        with open(qr.create_qrcode(access_code), 'rb') as qrcode_image:
+            context.bot.send_photo(chat_id=client_id, photo=qrcode_image)
+        
+    _booking = None
+
+
 def run_bot(tg_token):
     updater = Updater(tg_token)
 
@@ -304,7 +340,7 @@ def run_bot(tg_token):
             States.PAYMENT: [
                 MessageHandler(
                     Filters.regex('^Оплатить'),
-                    echo
+                    handle_qrcode
                 ),               
             ]
         },
