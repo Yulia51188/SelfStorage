@@ -184,11 +184,10 @@ def handle_confirm_booking(update, context):
     update.message.reply_text(
         dedent(f'''\
             Бронирование подтверждено.
-            Номер заказа: {booking_id}'''),
             Номер заказа: {booking_id}.
-            \
+            
             Для оплаты вам нужно указать свои личные данные
-            \
+            
             Введите ваше Имя'''),
     )
     create_new_client()
