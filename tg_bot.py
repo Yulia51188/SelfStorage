@@ -198,7 +198,7 @@ def add_period_length_to_booking(period_length, start_date=None):
     _booking['period_length'] = period_length
 
     if not start_date:
-        _booking['start_date'] = date.today().strftime('%d.%m.%y')
+        _booking['start_date'] = date.today().isoformat()
     else:
         _booking['start_date'] = start_date
     logger.info(f'Update booking: {_booking}')    
