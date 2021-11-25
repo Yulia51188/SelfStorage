@@ -270,3 +270,18 @@ def create_booking_message(booking):
         total_cost=booking['total_cost'],
     )
     return dedent(message_text)
+
+
+def get_passport_series_and_number(database, client_id):
+    passport_series_and_number = database.jsonget(
+                'clients',
+                Path(f'.{client_id}.passport')
+            )
+    return passport_series_and_number
+
+def set_booking_access_code(database, booking_id, access_code):
+    database.jsonset(
+        'bookings',
+        Path(f'.{booking_id}.access_code'),
+        access_code
+    )
