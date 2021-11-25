@@ -328,6 +328,19 @@ def add_booking_cost():
     logger.info(f'Update booking: {_booking}')   
 
 
+def create_new_client():
+    global _client
+    
+    _client = {
+        'name': '',
+        'sername': '',
+        'second_name': '',
+        'passport': '',
+        'birth_date': '',
+        'phone': '',
+    }
+
+
 def handle_qrcode(update, context):
     global _booking
 
