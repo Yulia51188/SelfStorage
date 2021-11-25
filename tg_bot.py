@@ -185,9 +185,86 @@ def handle_confirm_booking(update, context):
         dedent(f'''\
             Бронирование подтверждено.
             Номер заказа: {booking_id}'''),
+            Номер заказа: {booking_id}.
+            \
+            Для оплаты вам нужно указать свои личные данные
+            \
+            Введите ваше Имя'''),
+    )
+    create_new_client()
+    
+    return States.INPUT_SERNAME
+
+
+def handle_input_sername(update, context):
+    global _client
+    _client['name'] = update.message.text
+    
+    update.message.reply_text(
+        f'Введите вашу Фамилию'
+    )
+    return States.INPUT_SECOND_NAME
+
+
+def handle_input_second_name(update, context):
+    global _client
+    _client['sername'] = update.message.text
+     
+    update.message.reply_text(
+        f'Введите ваше Отчество'
+    )
+    return States.INPUT_PASSPORT
+
+
+def handle_input_passport(update, context):
+    global _client
+    _client['second_name'] = update.message.text
+    
+    update.message.reply_text(
+        f'Введите серию и номер паспорта слитно'
+    )
+    return States.INPUT_BIRTH_DATE
+
+
+def handle_input_birth_date(update, context):
+    global _client
+    _client['passport'] = update.message.text
+    
+    update.message.reply_text(
+        dedent(f'''\
+            Введите свою дату рождения в формате
+            ДД/ММ/ГГГГ'''))
+    
+    return States.INPUT_PHONE
+
+
+def handle_input_phone(update, context):
+    global _client
+    _client['birth_date'] = update.message.text
+    
+    update.message.reply_text(
+        dedent(f'''\
+            Введите свой номер телефона в формате:
+            891144442233'''))
+    
+    return States.ADD_CLIENT_TO_DB
+
+
+def handle_add_client_to_db(update, context):
+    global _client, _booking
+    client_id = _booking["client_id"]
+    booking_id = _booking['booking_id']
+    _client['phone'] = update.message.text
+    db_processing.add_client_to_booking(_client, client_id)
+    _client = None
+    
+    update.message.reply_text(
+        dedent('''\
+            Ваши контактные данные записаны.
+            Для начала оплаты нажмите кнопку "Оплата"'''),
         reply_markup=db_processing.create_payment_keyboard(booking_id)
     )
-    # TODO: add states to input client personal data
+ 
     return States.PAYMENT_PART_1
 
 
