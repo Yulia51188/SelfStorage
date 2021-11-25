@@ -1,3 +1,4 @@
+from datetime import timedelta, date
 from rejson import Client, Path
 import logging
 import os
@@ -7,6 +8,8 @@ from telegram import ReplyKeyboardMarkup, KeyboardButton
 
 logger = logging.getLogger(__name__)
 _database = None
+
+DAYS_IN_MONTH = 30
 
 
 def get_database_connection():
@@ -175,3 +178,16 @@ def calculate_total_cost(booking):
 
     price = stuff['price'][booking['period_type']]
     return price * booking['period_length'] * booking['count']
+
+
+def get_end_date(start_date_iso, unit, period, correct_day=False):
+    start_date = date.fromisoformat(start_date_iso)
+
+    if unit == 'week':
+        end_date = start_date + timedelta(weeks=period)
+    else:
+        end_date = start_date + timedelta(days=period * DAYS_IN_MONTH)
+
+    if correct_day:
+        end_date = end_date - timedelta(days=1)
+    return end_date.isoformat()
