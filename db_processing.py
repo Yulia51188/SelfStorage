@@ -65,7 +65,7 @@ def create_other_keyboard():
             [
                 KeyboardButton(
                     text=(dedent(f'''\
-                        {stuff["name"]} - {stuff["base_price"]} руб. 
+                        {stuff_id}. {stuff["name"]} - {stuff["base_price"]} руб. 
                         (за каждый доп. кв. м. + {stuff["add_one_price"]} руб.)
                         '''
                     ))
