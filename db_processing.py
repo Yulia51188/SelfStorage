@@ -215,3 +215,58 @@ def add_booking(booking):
     db.jsonset('bookings', Path(f'.{booking_id}'), booking)
     logger.info(f'Set booking {booking_id} to db: {booking}')
     return booking_id
+
+
+def convert_to_ruformat(date_iso):
+    input_date = date.fromisoformat(date_iso)
+    return input_date.strftime('%d.%m.%y')
+
+
+def create_booking_message(booking):
+    message_template = '''\
+        Проверьте выбранные параметры бронирования:
+        
+        Склад: {storage_name} в г. {city}
+        Адрес склада: {address}
+        
+        Категория хранения: {item_name}
+        {count_name}: {count}
+        
+        Период: {period} {period_units}
+        Доступ к ячейке с {start_date} по {end_date}
+        
+        Сумма к оплате: {total_cost} руб. 
+        '''
+
+    db = get_database_connection()
+    
+    storage = db.jsonget('storages', Path(f'.{booking["storage_id"]}'))
+    stuff = db.jsonget(
+        'prices',
+        Path(f'.{booking["category"]}.{booking["item_id"]}')
+    )
+    
+    if booking['category'] == 'other':
+        count_name = 'Площадь ячейки для хранения, кв.м.'
+    else:
+        count_name = 'Количество вещей для хранения'
+
+    if booking['period_type'] == 'week':
+        period_units = 'нед.'
+    else:
+        period_units = 'мес.'
+
+    message_text = message_template.format(
+        storage_name=storage['name'],
+        city=storage['city'],
+        address=storage['address'],
+        item_name=stuff['name'],
+        count_name=count_name,
+        count=booking['count'],
+        period=booking['period_length'],
+        period_units=period_units,
+        start_date=convert_to_ruformat(booking['start_date']),
+        end_date=convert_to_ruformat(booking['end_date']),
+        total_cost=booking['total_cost'],
+    )
+    return dedent(message_text)

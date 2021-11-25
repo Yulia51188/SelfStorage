@@ -160,10 +160,7 @@ def handle_period_length(update, context):
 
     # TO DO: create pretty message with booking info
     update.message.reply_text(
-        f'''
-        Ваше бронирование:
-        {_booking}
-        ''',
+        db_processing.create_booking_message(_booking),
         reply_markup=db_processing.create_booking_keyboard()
     )
     return States.INVITE_TO_BOOKING
