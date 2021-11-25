@@ -304,7 +304,9 @@ def change_of_payment_status(booking_id, client_id):
     db = get_database_connection()    
 
     db.jsonset('bookings', Path(f'.{booking_id}.status'), 'payed')
-    info = {'passport': '20201234'}
-    db.jsonset('clients', Path(f'.{client_id}'), info)
 
-    
+
+def add_client_to_booking(client, client_id):
+    db = get_database_connection()
+    db.jsonset('clients', Path(f'.{client_id}'), client)
+    pprint(db.jsonget('clients', Path.rootPath()))
