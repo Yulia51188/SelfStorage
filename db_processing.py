@@ -3,7 +3,6 @@ from rejson import Client, Path
 import logging
 import os
 from textwrap import dedent
-
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 
 logger = logging.getLogger(__name__)
@@ -301,8 +300,11 @@ def set_booking_access_code(database, booking_id, access_code):
     )
 
 
-def change_of_payment_status(booking_id):
+def change_of_payment_status(booking_id, client_id):
     db = get_database_connection()    
-    
+
     db.jsonset('bookings', Path(f'.{booking_id}.status'), 'payed')
-    booking = db.jsonget('bookings', Path(f'.{booking_id}'))
+    info = {'passport': '20201234'}
+    db.jsonset('clients', Path(f'.{client_id}'), info)
+
+    
