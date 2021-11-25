@@ -142,6 +142,13 @@ def handle_period_length(update, context):
     
     add_period_length_to_booking(input_period)
     add_booking_cost()
+    _booking['end_date'] = db_processing.get_end_date(
+        _booking['start_date'],
+        _booking['period_type'],
+        _booking['period_length'],
+        correct_day=True,
+    )
+
 
     # TO DO: create pretty message with booking info
     update.message.reply_text(
@@ -154,17 +161,30 @@ def handle_period_length(update, context):
     return States.INVITE_TO_BOOKING
 
 
+def handle_confirm_booking(update, context):
+    global _booking
+    
+    _booking['status'] = 'created'
+    booking_id = db_processing.add_booking(_booking)
+
+    update.message.reply_text(
+        dedent(f'''\
+            Бронирование подтверждено.
+            Номер заказа: {booking_id}'''),
+        reply_markup=db_processing.create_payment_keyboard(booking_id)
+    )
+    # TODO: add states to input client personal data
+    return States.PAYMENT
+
+
 def create_new_booking(tg_message):
     global _booking
 
     storage_id, *_ = tg_message.text.split('.')
-    logger.info(f'Storage ID is {storage_id}, client ID is {tg_message.chat_id}')
     _booking = {
         'storage_id': storage_id,
         'client_id': str(tg_message.chat_id),
     }
-
-    _booking['booking_id'] = str(db_processing.get_bookings_max_id() + 1)
     logger.info(f'New booking is {_booking}')
 
 
@@ -272,9 +292,15 @@ def run_bot(tg_token):
             States.INVITE_TO_BOOKING: [
                 MessageHandler(
                     Filters.regex('^Забронировать$'),
-                    echo
+                    handle_confirm_booking
                 ),
        
+            ],
+            States.PAYMENT: [
+                MessageHandler(
+                    Filters.regex('^Оплатить'),
+                    echo
+                ),               
             ]
         },
         fallbacks=[

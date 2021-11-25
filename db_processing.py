@@ -143,6 +143,22 @@ def create_booking_keyboard():
         resize_keyboard=True,
         one_time_keyboard=True
     )
+    return reply_markup
+
+
+def create_payment_keyboard(booking_id):
+    db = get_database_connection()    
+    total_cost = db.jsonget('bookings', Path(f'.{booking_id}.total_cost'))
+
+    keyboard = [
+        [KeyboardButton(text=f'Оплатить {total_cost} руб.')],
+        [KeyboardButton(text='Отмена')],
+    ]
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
     return reply_markup    
 
 
@@ -191,3 +207,11 @@ def get_end_date(start_date_iso, unit, period, correct_day=False):
     if correct_day:
         end_date = end_date - timedelta(days=1)
     return end_date.isoformat()
+
+
+def add_booking(booking):
+    db = get_database_connection()   
+    booking_id = get_bookings_max_id() + 1
+    db.jsonset('bookings', Path(f'.{booking_id}'), booking)
+    logger.info(f'Set booking {booking_id} to db: {booking}')
+    return booking_id
