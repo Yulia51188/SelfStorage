@@ -5,8 +5,10 @@ from enum import Enum
 from textwrap import dedent
 
 from dotenv import load_dotenv
+
+from telegram import LabeledPrice
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
-                          MessageHandler, Updater)
+                          MessageHandler, Updater, PreCheckoutQueryHandler)
 
 import access_qrcode as qr
 import db_processing
@@ -30,7 +32,10 @@ class States(Enum):
     INPUT_PASSPORT = 9
     INPUT_BIRTH_DATE = 10
     INPUT_PHONE = 11
-    PAYMENT = 12
+    PAYMENT_PART_1 = 12
+    PAYMENT_PART_2 = 13
+    PAYMENT_PART_3 = 14
+    CREATE_QR = 15
 
 
 def start(update, context):
@@ -182,7 +187,7 @@ def handle_confirm_booking(update, context):
         reply_markup=db_processing.create_payment_keyboard(booking_id)
     )
     # TODO: add states to input client personal data
-    return States.PAYMENT
+    return States.PAYMENT_PART_1
 
 
 def create_new_booking(tg_message):
@@ -250,8 +255,6 @@ def handle_qrcode(update, context):
 
     db = db_processing.get_database_connection()
 
-    # should be deleted
-    _booking['status'] = 'payed'
 
     if _booking['status'] == 'payed':
         client_id = _booking["client_id"]
@@ -277,6 +280,53 @@ def handle_qrcode(update, context):
         
     _booking = None
 
+
+def start_without_shipping_callback(update, context):
+    """Sends an invoice without shipping-payment."""
+    global _booking, provider_token
+    
+    chat_id = update.message.chat_id
+    
+    title = "Оплата бронирования"
+    description = f"Оплата категории {_booking['category']}"
+    payload = "Fuppergupper"
+    currency = "RUB"
+    price = _booking['total_cost']
+    prices = [LabeledPrice("Test", price * 100)]
+    
+    context.bot.send_invoice(
+        chat_id, title, description, payload, provider_token, currency, prices
+    )
+    return States.PAYMENT_PART_2
+
+def precheckout_callback(update, context):
+    """Answers the PreQecheckoutQuery"""
+    global _booking
+    query = update.pre_checkout_query
+    # check the payload, is this from your bot?
+    if query.invoice_payload != 'Fuppergupper':
+        # answer False pre_checkout_query
+        query.answer(ok=False, error_message="Something went wrong...")
+        _booking['status'] = 'payed'
+    else:
+        query.answer(ok=True)
+
+
+def successful_payment_callback(update, context):
+    global _booking
+    
+    booking_id = _booking['booking_id']
+    client_id = _booking["client_id"]
+    
+    _booking['status'] = 'payed'
+    db_processing.change_of_payment_status(booking_id, client_id)
+    update.message.reply_text(
+        dedent(f'Оплата прошла успешно'),
+        reply_markup=db_processing.create_qr_code_keyboard(booking_id)
+    )
+    return States.CREATE_QR
+
+    
 
 def run_bot(tg_token):
     updater = Updater(tg_token)
@@ -337,12 +387,26 @@ def run_bot(tg_token):
                 ),
        
             ],
-            States.PAYMENT: [
+            States.PAYMENT_PART_1: [
                 MessageHandler(
                     Filters.regex('^Оплатить'),
+                    start_without_shipping_callback
+                ),
+            ],
+            States.PAYMENT_PART_2: [
+                MessageHandler(
+                    Filters.successful_payment,
+                    successful_payment_callback
+                ),
+            ],
+            
+            States.CREATE_QR: [
+                MessageHandler(
+                    Filters.regex('^Показать QR-код'),
                     handle_qrcode
                 ),               
             ]
+
         },
         fallbacks=[
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
@@ -350,12 +414,14 @@ def run_bot(tg_token):
         ],
     )
     dispatcher.add_handler(conv_handler)
-
+    dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
+    
     updater.start_polling()
     updater.idle()
 
 
 def main():
+    global provider_token
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
@@ -363,6 +429,7 @@ def main():
 
     load_dotenv()
     tg_token = os.getenv('TG_TOKEN')
+    provider_token = os.environ['PROVIDER_TOKEN']
 
     run_bot(tg_token)
 
