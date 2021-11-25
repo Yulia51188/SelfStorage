@@ -80,7 +80,7 @@ def handle_storage_choice(update, context):
 def handle_season_choice(update, context):
     add_category_to_booking('season')
     update.message.reply_text(
-        'Выберите, какую вещь будете хранить',
+        'Выберите, какую вещи какого типа будете хранить',
         reply_markup=db_processing.create_season_keyboard()
     ) 
     return States.CHOOSE_STUFF
@@ -89,7 +89,7 @@ def handle_season_choice(update, context):
 def handle_other_choice(update, context):
     add_category_to_booking('other')
     update.message.reply_text(
-        'Выберите, какую вещь будете хранить',
+        'Выберите тип ячейки для хранения',
         reply_markup=db_processing.create_other_keyboard()
     )     
     return States.CHOOSE_STUFF
@@ -97,26 +97,33 @@ def handle_other_choice(update, context):
 
 def handle_choose_stuff(update, context):
     add_stuff_to_booking(update.message.text)
-    update.message.reply_text(
-        'Сколько вещей выбранного типа нужно хранить?'
-    )      
+    
+    if _booking['category'] == 'other':
+        message_text = 'Введите необходимую площадь ячейки от 1 кв.м.'
+    else:
+        message_text = 'Введите количество вещей для хранения'   
+    
+    update.message.reply_text(message_text)      
     return States.INPUT_COUNT
 
 
 def handle_input_count(update, context):
+    global _booking
+
     add_count_to_booking(update.message.text)
     is_week = db_processing.is_week_price_available(_booking)
 
     if is_week:
         update.message.reply_text(
-            'Выберите подходящий тариф для оплаты хранения:',
+            'Выберите, в чем будет измерятся период хранения: недели или месяцы?',
             reply_markup=db_processing.create_period_keyboard()
         )      
         return States.INPUT_PERIOD_TYPE
     
     add_period_type_to_booking(is_week=False)            
+    period_type = is_week and 'недель' or 'месяцев'
     update.message.reply_text(
-        'Введите количество месяцев от 1 до 6'
+        f'Введите на сколько {period_type} понадобится хранение'
     ) 
     return States.INPUT_PERIOD_LENGTH
 
@@ -126,7 +133,7 @@ def handle_period_type(update, context):
     add_period_type_to_booking(is_week)
     period_type = is_week and 'недель' or 'месяцев'
     update.message.reply_text(
-        f'Введите на сколько {period_type} понадобится хранение. '
+        f'Введите на сколько {period_type} понадобится хранение'
     ) 
     return States.INPUT_PERIOD_LENGTH
 
