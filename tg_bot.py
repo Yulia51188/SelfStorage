@@ -34,7 +34,7 @@ class States(Enum):
 def start(update, context):
     global _booking
     _booking = None
-    
+
     update.message.reply_text(
         dedent('''\
         Привет!
@@ -150,7 +150,6 @@ def handle_period_length(update, context):
         _booking['period_length'],
         correct_day=True,
     )
-
 
     # TO DO: create pretty message with booking info
     update.message.reply_text(
