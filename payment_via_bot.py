@@ -112,7 +112,7 @@ def main() -> None:
     global provider_token
     load_dotenv()
     token = os.environ['TELEGRAM_TOKEN']
-    provider_token = os.environ['PROVIDER_TOKEN']
+    provider_token = os.environ['P_TOKEN']
     updater = Updater(token)    
     dispatcher = updater.dispatcher
     

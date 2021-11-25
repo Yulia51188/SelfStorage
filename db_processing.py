@@ -162,6 +162,19 @@ def create_payment_keyboard(booking_id):
     return reply_markup    
 
 
+def create_qr_code_keyboard(booking_id):
+
+    keyboard = [
+        [KeyboardButton(text='Показать QR-код')],
+    ]
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return reply_markup
+
+
 def get_bookings_max_id():
     db = get_database_connection()
     ids = [int(booking_id) for booking_id in 
@@ -279,9 +292,17 @@ def get_passport_series_and_number(database, client_id):
             )
     return passport_series_and_number
 
+
 def set_booking_access_code(database, booking_id, access_code):
     database.jsonset(
         'bookings',
         Path(f'.{booking_id}.access_code'),
         access_code
     )
+
+
+def change_of_payment_status(booking_id):
+    db = get_database_connection()    
+    
+    db.jsonset('bookings', Path(f'.{booking_id}.status'), 'payed')
+    booking = db.jsonget('bookings', Path(f'.{booking_id}'))
