@@ -205,10 +205,9 @@ def add_period_length_to_booking(period_length, start_date=None):
 
 
 def add_booking_cost():
-    # TO DO: add cost calculation
-    total_cost = 1000
-
     global _booking
+    total_cost = db_processing.calculate_total_cost(_booking)
+
     _booking['total_cost'] = total_cost
     logger.info(f'Update booking: {_booking}')   
 

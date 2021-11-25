@@ -156,3 +156,22 @@ def is_week_price_available(booking):
     db = get_database_connection()
     chosen_stuff = db.jsonget('prices', Path(f'.season.{booking["item_id"]}'))
     return chosen_stuff['price']['week']
+
+
+def calculate_total_cost(booking):
+    db = get_database_connection()
+    stuff = db.jsonget(
+        'prices',
+        Path(f'.{booking["category"]}.{booking["item_id"]}')
+    )
+    logger.info(f'Calculate total_cost for {stuff}')
+    
+    if booking['category'] == 'other':
+        base_price = stuff['base_price']
+        additional_price = stuff['add_one_price']
+        additional_count = booking['count'] - 1
+        month_price = base_price + additional_price * additional_count
+        return month_price * booking['period_length']
+
+    price = stuff['price'][booking['period_type']]
+    return price * booking['period_length'] * booking['count']
