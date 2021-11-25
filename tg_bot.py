@@ -32,6 +32,8 @@ class States(Enum):
 
 
 def start(update, context):
+    global _booking
+    _booking = None
     
     update.message.reply_text(
         dedent('''\
