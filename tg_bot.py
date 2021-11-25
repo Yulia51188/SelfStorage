@@ -159,7 +159,7 @@ def create_new_booking(tg_message):
         'tg_chat_id': tg_message.chat_id,
     }
 
-    _booking['booking_id'] = db_processing.get_bookings_count()
+    _booking['booking_id'] = str(db_processing.get_bookings_max_id() + 1)
     logger.info(f'New booking is {_booking}')
 
 

@@ -1,6 +1,7 @@
 from rejson import Client, Path
 import logging
 import os
+from textwrap import dedent
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 
@@ -24,11 +25,11 @@ def create_stogares_keyboard():
     db = get_database_connection()
     storages = db.jsonget('storages', Path.rootPath())
     keyboard = []
-    for storage in storages:
+    for storage_id, storage in storages.items():
         keyboard.append(
             [
                 KeyboardButton(
-                    text=(f'{storage["storage_id"]}. {storage["name"]}'
+                    text=(f'{storage_id}. {storage["name"]}'
                           f'({storage["address"]})')
                 ),
             ],
@@ -56,16 +57,18 @@ def create_categories_keyboard():
 
 def create_other_keyboard():
     db = get_database_connection()
-    prices = db.jsonget('prices', Path.rootPath())
-    category_stuffs = prices[0]['other']
+    category_stuffs = db.jsonget('prices', Path('.other'))
     
     keyboard = []
-    for stuff in category_stuffs:
+    for stuff_id, stuff in category_stuffs.items():
         keyboard.append(
             [
                 KeyboardButton(
-                    text=(f'{stuff["name"]} - {stuff["base_price"]} руб. '
-                          f'(добавить еще + {stuff["add_one_price"]} руб.)')
+                    text=(dedent(f'''\
+                        {stuff["name"]} - {stuff["base_price"]} руб. 
+                        (за каждый доп. кв. м. + {stuff["add_one_price"]} руб.)
+                        '''
+                    ))
                 ),
             ],
         )
@@ -79,17 +82,16 @@ def create_other_keyboard():
 
 def create_season_keyboard():
     db = get_database_connection()
-    prices = db.jsonget('prices', Path.rootPath())
-    category_stuffs = prices[0]['season']
+    category_stuffs = db.jsonget('prices', Path('.season'))
     
     keyboard = []
-    for stuff in category_stuffs:
+    for stuff_id, stuff in category_stuffs.items():
         if stuff["price"]["week"]:
             keyboard.append(
                 [
                     KeyboardButton(
                         text=(
-                            f'{stuff["item_id"]}. {stuff["name"]} ( '
+                            f'{stuff_id}. {stuff["name"]} ( '
                             f'{stuff["price"]["week"]} руб. в неделю или '
                             f'{stuff["price"]["month"]} руб. в месяц)'
                         )
@@ -101,7 +103,7 @@ def create_season_keyboard():
                 [
                     KeyboardButton(
                         text=(
-                            f'{stuff["item_id"]}. {stuff["name"]} ( '
+                            f'{stuff_id}. {stuff["name"]} ( '
                             f'{stuff["price"]["month"]} руб. в месяц)'
                         )
                     )
@@ -141,23 +143,16 @@ def create_booking_keyboard():
     return reply_markup    
 
 
-def get_bookings_count():
+def get_bookings_max_id():
     db = get_database_connection()
-    return db.jsonarrlen('bookings', Path.rootPath())
+    ids = [int(booking_id) for booking_id in 
+           db.jsonobjkeys('bookings', Path.rootPath())]
+    return max(ids)    
 
 
 def is_week_price_available(booking):
     if booking["category"] == 'other':
         return False
-    
     db = get_database_connection()
-    all_stuffs = db.jsonget('prices', Path.rootPath())
-    season_stuffs = all_stuffs[0]['season']
-    for stuff in season_stuffs:
-        logger.info(stuff)
-        if str(stuff['item_id']) != str(booking['item_id']):
-            continue
-        chosen_stuff = stuff
-        break
-    logger.info(f'Stuff in booking is {chosen_stuff}')
+    chosen_stuff = db.jsonget('prices', Path(f'.season.{booking["item_id"]}'))
     return chosen_stuff['price']['week']
