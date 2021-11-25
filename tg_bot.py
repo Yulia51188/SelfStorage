@@ -156,7 +156,7 @@ def create_new_booking(tg_message):
     logger.info(f'Storage ID is {storage_id}, client ID is {tg_message.chat_id}')
     _booking = {
         'storage_id': storage_id,
-        'tg_chat_id': tg_message.chat_id,
+        'client_id': str(tg_message.chat_id),
     }
 
     _booking['booking_id'] = str(db_processing.get_bookings_max_id() + 1)
