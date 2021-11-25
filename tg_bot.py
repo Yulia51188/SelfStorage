@@ -34,8 +34,7 @@ class States(Enum):
     INPUT_PHONE = 11
     PAYMENT_PART_1 = 12
     PAYMENT_PART_2 = 13
-    PAYMENT_PART_3 = 14
-    CREATE_QR = 15
+    CREATE_QR = 14
 
 
 def start(update, context):
