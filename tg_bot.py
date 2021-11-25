@@ -297,18 +297,17 @@ def start_without_shipping_callback(update, context):
     context.bot.send_invoice(
         chat_id, title, description, payload, provider_token, currency, prices
     )
-    print('ok')
     return States.PAYMENT_PART_2
 
 def precheckout_callback(update, context):
     """Answers the PreQecheckoutQuery"""
-    print(1)
+    global _booking
     query = update.pre_checkout_query
-    print(query)
     # check the payload, is this from your bot?
     if query.invoice_payload != 'Fuppergupper':
         # answer False pre_checkout_query
         query.answer(ok=False, error_message="Something went wrong...")
+        _booking['status'] = 'payed'
     else:
         query.answer(ok=True)
 
@@ -317,16 +316,17 @@ def successful_payment_callback(update, context):
     global _booking
     
     booking_id = _booking['booking_id']
-
-    db_processing.change_of_payment_status(booking_id)
+    client_id = _booking["client_id"]
+    
     _booking['status'] = 'payed'
+    db_processing.change_of_payment_status(booking_id, client_id)
     update.message.reply_text(
         dedent(f'Оплата прошла успешно'),
         reply_markup=db_processing.create_qr_code_keyboard(booking_id)
     )
-
     return States.CREATE_QR
 
+    
 
 def run_bot(tg_token):
     updater = Updater(tg_token)
