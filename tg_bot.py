@@ -370,6 +370,7 @@ def handle_qrcode(update, context):
             context.bot.send_photo(chat_id=client_id, photo=qrcode_image)
         
     _booking = None
+    return States.CHOOSE_STORAGE
 
 
 def start_without_shipping_callback(update, context):
@@ -478,6 +479,48 @@ def run_bot(tg_token):
                 ),
        
             ],
+            States.INPUT_SERNAME: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_sername
+                ),
+       
+            ],
+            States.INPUT_SECOND_NAME: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_second_name
+                ),
+       
+            ],
+            States.INPUT_PASSPORT: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_passport
+                ),
+       
+            ],
+            States.INPUT_BIRTH_DATE: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_birth_date
+                ),
+       
+            ],
+            States.INPUT_PHONE: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_phone
+                ),
+       
+            ],
+            States.ADD_CLIENT_TO_DB: [
+                MessageHandler(
+                    Filters.all,
+                    handle_add_client_to_db
+                ),
+       
+            ],
             States.PAYMENT_PART_1: [
                 MessageHandler(
                     Filters.regex('^Оплатить'),
@@ -501,7 +544,7 @@ def run_bot(tg_token):
         },
         fallbacks=[
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
-            MessageHandler(Filters.text & ~Filters.command, handle_unknown)
+            #MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
     )
     dispatcher.add_handler(conv_handler)
