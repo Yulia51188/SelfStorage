@@ -94,7 +94,7 @@ def handle_season_choice(update, context):
         'season',
     )
     update.message.reply_text(
-        'Выберите, какую вещи какого типа будете хранить',
+        'Выберите, вещи какого типа будете хранить',
         reply_markup=db_processing.create_season_keyboard()
     ) 
     return States.CHOOSE_STUFF
