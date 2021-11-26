@@ -165,7 +165,6 @@ def handle_period_length(update, context):
         _booking['period_length'],
     )
 
-    # TO DO: create pretty message with booking info
     update.message.reply_text(
         db_processing.create_booking_message(_booking),
         reply_markup=db_processing.create_booking_keyboard()
