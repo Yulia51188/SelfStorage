@@ -165,7 +165,6 @@ def handle_period_length(update, context):
         _booking['period_length'],
     )
 
-    # TO DO: create pretty message with booking info
     update.message.reply_text(
         db_processing.create_booking_message(_booking),
         reply_markup=db_processing.create_booking_keyboard()
@@ -199,7 +198,7 @@ def handle_input_sername(update, context):
     _client['name'] = update.message.text
     
     update.message.reply_text(
-        f'Введите вашу Фамилию'
+        'Введите вашу Фамилию'
     )
     return States.INPUT_SECOND_NAME
 
@@ -209,7 +208,7 @@ def handle_input_second_name(update, context):
     _client['sername'] = update.message.text
      
     update.message.reply_text(
-        f'Введите ваше Отчество'
+        'Введите ваше Отчество'
     )
     return States.INPUT_PASSPORT
 
@@ -219,7 +218,7 @@ def handle_input_passport(update, context):
     _client['second_name'] = update.message.text
     
     update.message.reply_text(
-        f'Введите серию и номер паспорта слитно'
+        'Введите серию и номер паспорта слитно'
     )
     return States.INPUT_BIRTH_DATE
 
@@ -229,7 +228,7 @@ def handle_input_birth_date(update, context):
     _client['passport'] = update.message.text
     
     update.message.reply_text(
-        dedent(f'''\
+        dedent('''\
             Введите свою дату рождения в формате
             ДД/ММ/ГГГГ'''))
     
@@ -344,7 +343,6 @@ def handle_qrcode(update, context):
 
     db = db_processing.get_database_connection()
 
-
     if _booking['status'] == 'payed':
         client_id = _booking["client_id"]
         passport_series_and_number = db_processing.get_passport_series_and_number(db, client_id)
@@ -364,8 +362,10 @@ def handle_qrcode(update, context):
         )
         context.bot.send_message(chat_id=client_id, text=message_text)
 
-        with open(qr.create_qrcode(access_code), 'rb') as qrcode_image:
+        qrcode_image_path = qr.create_qrcode(access_code)
+        with open(qrcode_image_path, 'rb') as qrcode_image:
             context.bot.send_photo(chat_id=client_id, photo=qrcode_image)
+        os.remove(qrcode_image_path)
         
     _booking = None
     return States.CHOOSE_STORAGE
@@ -388,6 +388,7 @@ def start_without_shipping_callback(update, context):
         chat_id, title, description, payload, provider_token, currency, prices
     )
     return States.PAYMENT_PART_2
+
 
 def precheckout_callback(update, context):
     """Answers the PreQecheckoutQuery"""
@@ -415,7 +416,6 @@ def successful_payment_callback(update, context):
         reply_markup=db_processing.create_qr_code_keyboard(booking_id)
     )
     return States.CREATE_QR
-
     
 
 def run_bot(tg_token):

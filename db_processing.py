@@ -17,8 +17,12 @@ def get_database_connection():
         database_password = os.getenv("DB_PASSWORD", default=None)
         database_host = os.getenv("DB_HOST", default='localhost')
         database_port = os.getenv("DB_PORT", default=6379)
-        _database = Client(host=database_host, port=database_port,
-            password=database_password, decode_responses=True)
+        _database = Client(
+            host=database_host,
+            port=database_port,
+            password=database_password,
+            decode_responses=True
+        )
     return _database
 
 
@@ -61,17 +65,18 @@ def create_other_keyboard():
     category_stuffs = db.jsonget('prices', Path('.other'))
     
     keyboard = []
+    text_template = '''\
+        {id} - {base_price} руб. 
+        (за каждый доп. кв. м. + {add_price} руб.)
+        '''
     for stuff_id, stuff in category_stuffs.items():
+        button_caption = text_template.format(
+            id=stuff_id,
+            base_price=stuff["base_price"],
+            add_price=stuff["add_one_price"],
+        )
         keyboard.append(
-            [
-                KeyboardButton(
-                    text=(dedent(f'''\
-                        {stuff_id}. {stuff["name"]} - {stuff["base_price"]} руб. 
-                        (за каждый доп. кв. м. + {stuff["add_one_price"]} руб.)
-                        '''
-                    ))
-                ),
-            ],
+            [KeyboardButton(text=dedent(button_caption))],
         )
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
@@ -86,30 +91,30 @@ def create_season_keyboard():
     category_stuffs = db.jsonget('prices', Path('.season'))
     
     keyboard = []
+    week_template = '''\
+        {id}. {name} 
+        {week_price} руб. в неделю или {month_price} руб. в месяц
+        '''
+    month_template = '''\
+        {id}. {name} 
+        {month_price} руб. в месяц
+        '''
     for stuff_id, stuff in category_stuffs.items():
         if stuff["price"]["week"]:
-            keyboard.append(
-                [
-                    KeyboardButton(
-                        text=(
-                            f'{stuff_id}. {stuff["name"]} ( '
-                            f'{stuff["price"]["week"]} руб. в неделю или '
-                            f'{stuff["price"]["month"]} руб. в месяц)'
-                        )
-                    )
-                ],
+            button_caption = week_template.format(
+                id=stuff_id,
+                name=stuff["name"],
+                week_price=stuff["price"]["week"],
+                month_price=stuff["price"]["month"],
             )
         else:
-            keyboard.append(
-                [
-                    KeyboardButton(
-                        text=(
-                            f'{stuff_id}. {stuff["name"]} ( '
-                            f'{stuff["price"]["month"]} руб. в месяц)'
-                        )
-                    )
-                ],
-            )  
+            button_caption = month_template.format(
+                id=stuff_id,
+                name=stuff["name"],
+                month_price=stuff["price"]["month"],
+            )
+        keyboard.append([KeyboardButton(text=dedent(button_caption))])
+
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
         resize_keyboard=True,

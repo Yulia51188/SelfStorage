@@ -131,8 +131,12 @@ def get_database_connection():
     database_password = os.getenv("DB_PASSWORD", default=None)
     database_host = os.getenv("DB_HOST", default='localhost')
     database_port = os.getenv("DB_PORT", default=6379)
-    database = Client(host=database_host, port=database_port,
-        password=database_password, decode_responses=True)
+    database = Client(
+        host=database_host,
+        port=database_port,
+        password=database_password,
+        decode_responses=True
+    )
     return database
 
 
@@ -165,15 +169,9 @@ def main():
     load_dotenv()
     db = get_database_connection()
 
+    # TODO: add argparse to set upload or not test data
     # load_test_data_to_db(db)
     print_db_content(db)    
-
-    print('\nПримеры частичных запросов по ID или категории')    
-    print(db.jsonget('storages', Path('.3')))
-    print(db.jsonget('prices', Path('.season')))
-    print(db.jsonget('prices', Path('.season.1')))
-    print(db.jsonget('bookings', Path('.1')))    
-    print(db.jsonget('clients', Path('.123456789')))   
 
 
 if __name__ == '__main__':
