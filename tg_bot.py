@@ -456,7 +456,7 @@ def run_bot(tg_token):
             ],
             States.INPUT_PERIOD_LENGTH: [
                 MessageHandler(
-                    Filters.regex(r'^[1-9]+$'),
+                    Filters.regex(r'^[0-9]+$'),
                     handle_period_length
                 ),
             ],
