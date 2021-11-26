@@ -5,8 +5,10 @@ from enum import Enum
 from textwrap import dedent
 
 from dotenv import load_dotenv
+
+from telegram import LabeledPrice
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
-                          MessageHandler, Updater)
+                          MessageHandler, Updater, PreCheckoutQueryHandler)
 
 import access_qrcode as qr
 import db_processing
@@ -26,11 +28,15 @@ class States(Enum):
     INPUT_PERIOD_TYPE = 5
     INPUT_PERIOD_LENGTH = 6
     INVITE_TO_BOOKING = 7
-    INPUT_NAME = 8
-    INPUT_PASSPORT = 9
-    INPUT_BIRTH_DATE = 10
-    INPUT_PHONE = 11
-    PAYMENT = 12
+    INPUT_SERNAME = 8
+    INPUT_SECOND_NAME = 9
+    INPUT_PASSPORT = 10
+    INPUT_BIRTH_DATE = 11
+    INPUT_PHONE = 12
+    ADD_CLIENT_TO_DB = 13
+    PAYMENT_PART_1 = 14
+    PAYMENT_PART_2 = 15
+    CREATE_QR = 16
 
 
 def start(update, context):
@@ -177,11 +183,87 @@ def handle_confirm_booking(update, context):
     update.message.reply_text(
         dedent(f'''\
             Бронирование подтверждено.
-            Номер заказа: {booking_id}'''),
+            Номер заказа: {booking_id}.
+            
+            Для оплаты вам нужно указать свои личные данные
+            
+            Введите ваше Имя'''),
+    )
+    create_new_client()
+    
+    return States.INPUT_SERNAME
+
+
+def handle_input_sername(update, context):
+    global _client
+    _client['name'] = update.message.text
+    
+    update.message.reply_text(
+        f'Введите вашу Фамилию'
+    )
+    return States.INPUT_SECOND_NAME
+
+
+def handle_input_second_name(update, context):
+    global _client
+    _client['sername'] = update.message.text
+     
+    update.message.reply_text(
+        f'Введите ваше Отчество'
+    )
+    return States.INPUT_PASSPORT
+
+
+def handle_input_passport(update, context):
+    global _client
+    _client['second_name'] = update.message.text
+    
+    update.message.reply_text(
+        f'Введите серию и номер паспорта слитно'
+    )
+    return States.INPUT_BIRTH_DATE
+
+
+def handle_input_birth_date(update, context):
+    global _client
+    _client['passport'] = update.message.text
+    
+    update.message.reply_text(
+        dedent(f'''\
+            Введите свою дату рождения в формате
+            ДД/ММ/ГГГГ'''))
+    
+    return States.INPUT_PHONE
+
+
+def handle_input_phone(update, context):
+    global _client
+    _client['birth_date'] = update.message.text
+    
+    update.message.reply_text(
+        dedent(f'''\
+            Введите свой номер телефона в формате:
+            891144442233'''))
+    
+    return States.ADD_CLIENT_TO_DB
+
+
+def handle_add_client_to_db(update, context):
+    global _client, _booking
+    client_id = _booking["client_id"]
+    booking_id = _booking['booking_id']
+    _client['phone'] = update.message.text
+    db_processing.add_client_to_booking(_client, client_id)
+    _client = None
+    
+    update.message.reply_text(
+        dedent('''\
+            Ваши контактные данные записаны.
+            Для начала оплаты нажмите кнопку "Оплата"'''),
         reply_markup=db_processing.create_payment_keyboard(booking_id)
     )
-    # TODO: add states to input client personal data
-    return States.PAYMENT
+ 
+    return States.PAYMENT_PART_1
 
 
 def create_new_booking(tg_message):
@@ -244,13 +326,24 @@ def add_booking_cost():
     logger.info(f'Update booking: {_booking}')   
 
 
+def create_new_client():
+    global _client
+    
+    _client = {
+        'name': '',
+        'sername': '',
+        'second_name': '',
+        'passport': '',
+        'birth_date': '',
+        'phone': '',
+    }
+
+
 def handle_qrcode(update, context):
     global _booking
 
     db = db_processing.get_database_connection()
 
-    # should be deleted
-    _booking['status'] = 'payed'
 
     if _booking['status'] == 'payed':
         client_id = _booking["client_id"]
@@ -275,7 +368,55 @@ def handle_qrcode(update, context):
             context.bot.send_photo(chat_id=client_id, photo=qrcode_image)
         
     _booking = None
+    return States.CHOOSE_STORAGE
 
+
+def start_without_shipping_callback(update, context):
+    """Sends an invoice without shipping-payment."""
+    global _booking, provider_token
+    
+    chat_id = update.message.chat_id
+    
+    title = "Оплата бронирования"
+    description = f"Оплата категории {_booking['category']}"
+    payload = "Fuppergupper"
+    currency = "RUB"
+    price = _booking['total_cost']
+    prices = [LabeledPrice("Test", price * 100)]
+    
+    context.bot.send_invoice(
+        chat_id, title, description, payload, provider_token, currency, prices
+    )
+    return States.PAYMENT_PART_2
+
+def precheckout_callback(update, context):
+    """Answers the PreQecheckoutQuery"""
+    global _booking
+    query = update.pre_checkout_query
+    # check the payload, is this from your bot?
+    if query.invoice_payload != 'Fuppergupper':
+        # answer False pre_checkout_query
+        query.answer(ok=False, error_message="Something went wrong...")
+        _booking['status'] = 'payed'
+    else:
+        query.answer(ok=True)
+
+
+def successful_payment_callback(update, context):
+    global _booking
+    
+    booking_id = _booking['booking_id']
+    client_id = _booking["client_id"]
+    
+    _booking['status'] = 'payed'
+    db_processing.change_of_payment_status(booking_id, client_id)
+    update.message.reply_text(
+        dedent(f'Оплата прошла успешно'),
+        reply_markup=db_processing.create_qr_code_keyboard(booking_id)
+    )
+    return States.CREATE_QR
+
+    
 
 def run_bot(tg_token):
     updater = Updater(tg_token)
@@ -336,25 +477,83 @@ def run_bot(tg_token):
                 ),
        
             ],
-            States.PAYMENT: [
+            States.INPUT_SERNAME: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_sername
+                ),
+       
+            ],
+            States.INPUT_SECOND_NAME: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_second_name
+                ),
+       
+            ],
+            States.INPUT_PASSPORT: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_passport
+                ),
+       
+            ],
+            States.INPUT_BIRTH_DATE: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_birth_date
+                ),
+       
+            ],
+            States.INPUT_PHONE: [
+                MessageHandler(
+                    Filters.all,
+                    handle_input_phone
+                ),
+       
+            ],
+            States.ADD_CLIENT_TO_DB: [
+                MessageHandler(
+                    Filters.all,
+                    handle_add_client_to_db
+                ),
+       
+            ],
+            States.PAYMENT_PART_1: [
                 MessageHandler(
                     Filters.regex('^Оплатить'),
+                    start_without_shipping_callback
+                ),
+            ],
+            States.PAYMENT_PART_2: [
+                MessageHandler(
+                    Filters.successful_payment,
+                    successful_payment_callback
+                ),
+            ],
+            
+            States.CREATE_QR: [
+                MessageHandler(
+                    Filters.regex('^Показать QR-код'),
                     handle_qrcode
                 ),               
             ]
+
         },
         fallbacks=[
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
-            MessageHandler(Filters.text & ~Filters.command, handle_unknown)
+            #MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
     )
     dispatcher.add_handler(conv_handler)
-
+    dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
+    
     updater.start_polling()
     updater.idle()
 
 
 def main():
+    global provider_token
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
@@ -362,6 +561,7 @@ def main():
 
     load_dotenv()
     tg_token = os.getenv('TG_TOKEN')
+    provider_token = os.environ['PROVIDER_TOKEN']
 
     run_bot(tg_token)
 
