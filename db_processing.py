@@ -320,7 +320,7 @@ def add_client_personal_data_to_database(client_id, client_data):
 
 def clear_client_booking(client_id):
     db = get_database_connection()
-    db.jsonset(f'b{client_id}', Path.rootPath(), None)
+    db.jsondel(f'b{client_id}', Path.rootPath())
     logger.info(f'Clear {client_id} current booking')
 
 
@@ -435,7 +435,7 @@ def update_current_client(client_id, key, new_value):
 
 def clear_current_client(client_id):
     db = get_database_connection()
-    db.jsonset(f'c{client_id}', Path.rootPath(), None)
+    db.jsondel(f'c{client_id}', Path.rootPath())
     logger.info(f'Clear {client_id} current personal data')
 
 
