@@ -165,15 +165,9 @@ def main():
     load_dotenv()
     db = get_database_connection()
 
+    # TODO: add argparse to set upload or not test data
     # load_test_data_to_db(db)
     print_db_content(db)    
-
-    print('\nПримеры частичных запросов по ID или категории')    
-    print(db.jsonget('storages', Path('.3')))
-    print(db.jsonget('prices', Path('.season')))
-    print(db.jsonget('prices', Path('.season.1')))
-    print(db.jsonget('bookings', Path('.1')))    
-    print(db.jsonget('clients', Path('.123456789')))   
 
 
 if __name__ == '__main__':
