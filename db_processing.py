@@ -306,4 +306,5 @@ def change_of_payment_status(booking_id, client_id):
 def add_client_to_booking(client, client_id):
     db = get_database_connection()
     db.jsonset('clients', Path(f'.{client_id}'), client)
-    pprint(db.jsonget('clients', Path.rootPath()))
+    new_client = db.jsonget('clients', Path(f'.{client_id}'))
+    logger.info(f'Add client to database: {new_client}')
