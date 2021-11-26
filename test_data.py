@@ -44,7 +44,7 @@ PRICES = {
             }
         },
         '3': {
-            'name': 'Колёса 4 шт.',
+            'name': 'Комплект колёс из 4 шт.',
             'price': {
                 'week': None,
                 'month': 200,
@@ -60,7 +60,7 @@ PRICES = {
     },
     'other': { 
         '1': {
-            'name': 'Ячейка 1 кв. м.',
+            'name': 'Ячейка от 1 кв. м. до 10 кв. м.',
             'base_price': 599,
             'add_one_price': 150,
         },
@@ -170,7 +170,7 @@ def main():
     db = get_database_connection()
 
     # TODO: add argparse to set upload or not test data
-    # load_test_data_to_db(db)
+    load_test_data_to_db(db)
     print_db_content(db)    
 
 
