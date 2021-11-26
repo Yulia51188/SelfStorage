@@ -542,7 +542,7 @@ def run_bot(tg_token):
         },
         fallbacks=[
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
-            #MessageHandler(Filters.text & ~Filters.command, handle_unknown)
+            MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
     )
     dispatcher.add_handler(conv_handler)
