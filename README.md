@@ -10,10 +10,14 @@
     - создайте виртуальное окружение [virtualenv/venv](https://docs.python.org/3/library/venv.html) для изоляции проекта.
     - активируйте виртуальное окружение:
   
-    ```. ./env/bin/activate```
+    ```
+    . ./env/bin/activate
+    ```
     - установите необходимые зависимости:
 
-    ```pip install -r requirements.txt```
+    ```
+    pip install -r requirements.txt
+    ```
 - В корневой директории создайте файл ```.env```.
 - Создайте бота в приложении Telegram с помощью ```@BotFather```. Сохраните полученный секретный ключ в переменной ```TG_TOKEN``` в файле ```.env``` как в примере ниже:
 
