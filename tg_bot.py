@@ -479,42 +479,42 @@ def run_bot(tg_token):
             ],
             States.INPUT_SERNAME: [
                 MessageHandler(
-                    Filters.all,
+                    Filters.text & ~Filters.command,
                     handle_input_sername
                 ),
        
             ],
             States.INPUT_SECOND_NAME: [
                 MessageHandler(
-                    Filters.all,
+                    Filters.text & ~Filters.command,
                     handle_input_second_name
                 ),
        
             ],
             States.INPUT_PASSPORT: [
                 MessageHandler(
-                    Filters.all,
+                    Filters.text & ~Filters.command,
                     handle_input_passport
                 ),
        
             ],
             States.INPUT_BIRTH_DATE: [
                 MessageHandler(
-                    Filters.all,
+                    Filters.text & ~Filters.command,
                     handle_input_birth_date
                 ),
        
             ],
             States.INPUT_PHONE: [
                 MessageHandler(
-                    Filters.all,
+                    Filters.text & ~Filters.command,
                     handle_input_phone
                 ),
        
             ],
             States.ADD_CLIENT_TO_DB: [
                 MessageHandler(
-                    Filters.all,
+                    Filters.text & ~Filters.command,
                     handle_add_client_to_db
                 ),
        
