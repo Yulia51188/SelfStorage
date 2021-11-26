@@ -13,7 +13,7 @@ def create_access_code(passport_series_and_number: str) -> str:
     return access_code
 
 
-def create_qrcode(code:str) -> str:
+def create_qrcode(code: str) -> str:
     """Create QR-code image and return it's path."""
     qrcode_image = qrcode.make(code)
     qrcodes_directory = './qrcodes/'

@@ -1,4 +1,5 @@
 from datetime import timedelta, date
+from dateutil.relativedelta import relativedelta
 from rejson import Client, Path
 import logging
 import os
@@ -8,8 +9,6 @@ from telegram import ReplyKeyboardMarkup, KeyboardButton
 
 logger = logging.getLogger(__name__)
 _database = None
-
-DAYS_IN_MONTH = 30
 
 
 def get_database_connection():
@@ -198,14 +197,12 @@ def calculate_total_cost(booking):
 
 def get_end_date(start_date_iso, unit, period, correct_day=False):
     start_date = date.fromisoformat(start_date_iso)
-
+    
     if unit == 'week':
         end_date = start_date + timedelta(weeks=period)
     else:
-        end_date = start_date + timedelta(days=period * DAYS_IN_MONTH)
+        end_date = start_date + relativedelta(months=+period)
 
-    if correct_day:
-        end_date = end_date - timedelta(days=1)
     return end_date.isoformat()
 
 
@@ -274,10 +271,11 @@ def create_booking_message(booking):
 
 def get_passport_series_and_number(database, client_id):
     passport_series_and_number = database.jsonget(
-                'clients',
-                Path(f'.{client_id}.passport')
-            )
+        'clients',
+        Path(f'.{client_id}.passport')
+    )
     return passport_series_and_number
+
 
 def set_booking_access_code(database, booking_id, access_code):
     database.jsonset(

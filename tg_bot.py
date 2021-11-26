@@ -157,7 +157,6 @@ def handle_period_length(update, context):
         _booking['start_date'],
         _booking['period_type'],
         _booking['period_length'],
-        correct_day=True,
     )
 
     # TO DO: create pretty message with booking info
