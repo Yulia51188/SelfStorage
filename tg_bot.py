@@ -362,8 +362,10 @@ def handle_qrcode(update, context):
         )
         context.bot.send_message(chat_id=client_id, text=message_text)
 
-        with open(qr.create_qrcode(access_code), 'rb') as qrcode_image:
+        qrcode_image_path = qr.create_qrcode(access_code)
+        with open(qrcode_image_path, 'rb') as qrcode_image:
             context.bot.send_photo(chat_id=client_id, photo=qrcode_image)
+        os.remove(qrcode_image_path)
         
     _booking = None
     return States.CHOOSE_STORAGE
