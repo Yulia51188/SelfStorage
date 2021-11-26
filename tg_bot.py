@@ -541,6 +541,7 @@ def run_bot(tg_token):
 
         },
         fallbacks=[
+            CommandHandler('start', start),
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
             MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
