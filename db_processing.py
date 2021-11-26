@@ -66,14 +66,15 @@ def create_other_keyboard():
     
     keyboard = []
     text_template = '''\
-        {id} - {base_price} руб. 
+        {id}. {name} - {base_price} руб. 
         (за каждый доп. кв. м. + {add_price} руб.)
         '''
     for stuff_id, stuff in category_stuffs.items():
         button_caption = text_template.format(
             id=stuff_id,
-            base_price=stuff["base_price"],
-            add_price=stuff["add_one_price"],
+            name=stuff['name'],
+            base_price=stuff['base_price'],
+            add_price=stuff['add_one_price'],
         )
         keyboard.append(
             [KeyboardButton(text=dedent(button_caption))],
@@ -286,30 +287,161 @@ def create_booking_message(booking):
     return dedent(message_text)
 
 
-def get_passport_series_and_number(database, client_id):
-    passport_series_and_number = database.jsonget(
+def get_passport(client_id):
+    db = get_database_connection() 
+    passport_series_and_number = db.jsonget(
         'clients',
         Path(f'.{client_id}.passport')
     )
     return passport_series_and_number
 
 
-def set_booking_access_code(database, booking_id, access_code):
-    database.jsonset(
+def set_booking_access_code(booking_id, access_code):
+    db = get_database_connection()    
+    db.jsonset(
         'bookings',
         Path(f'.{booking_id}.access_code'),
         access_code
     )
 
 
-def change_of_payment_status(booking_id, client_id):
+def change_of_payment_status(booking_id):
     db = get_database_connection()    
-
     db.jsonset('bookings', Path(f'.{booking_id}.status'), 'payed')
 
 
-def add_client_to_booking(client, client_id):
+def add_client_personal_data_to_database(client_id, client_data):
     db = get_database_connection()
-    db.jsonset('clients', Path(f'.{client_id}'), client)
+    db.jsonset('clients', Path(f'.{client_id}'), client_data)
     new_client = db.jsonget('clients', Path(f'.{client_id}'))
     logger.info(f'Add client to database: {new_client}')
+    return new_client
+
+
+def clear_client_booking(client_id):
+    db = get_database_connection()
+    db.jsonset(f'b{client_id}', Path.rootPath(), None)
+    logger.info(f'Clear {client_id} current booking')
+
+
+def get_client_current_booking(client_id):
+    db = get_database_connection()
+    current_booking = db.jsonget(f'b{client_id}', Path.rootPath())
+    return current_booking
+
+
+def set_client_current_booking(client_id, booking):
+    db = get_database_connection()
+    current_booking = db.jsonset(f'b{client_id}', Path.rootPath(), booking)
+    logger.info(f'Update client {client_id} current booking to {booking}')
+    return current_booking
+
+
+def add_stuff_to_booking(client_id, button_text):
+    current_booking = get_client_current_booking(client_id)
+    stuff_id, *_ = button_text.split('.')
+    current_booking['item_id'] = stuff_id
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def add_count_to_booking(client_id, count):
+    current_booking = get_client_current_booking(client_id)
+    current_booking['count'] = int(count)
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def create_new_booking(client_id, button_text):
+    current_booking = get_client_current_booking(client_id)
+    storage_id, *_ = button_text.split('.')
+    current_booking = {
+        'storage_id': storage_id,
+        'client_id': str(client_id),
+    }
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def add_category_to_booking(client_id, category_name):
+    current_booking = get_client_current_booking(client_id)
+    current_booking['category'] = category_name
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def add_period_type_to_booking(client_id, is_week=False):
+    current_booking = get_client_current_booking(client_id)
+    current_booking['period_type'] = is_week and 'week' or 'month'
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def add_period_length_to_booking(client_id, period_length, start_date=None):
+    current_booking = get_client_current_booking(client_id)
+    
+    current_booking['period_length'] = period_length
+    if not start_date:
+        current_booking['start_date'] = date.today().isoformat()
+    else:
+        current_booking['start_date'] = start_date
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def add_booking_cost(client_id):
+    current_booking = get_client_current_booking(client_id)
+    total_cost = calculate_total_cost(current_booking)
+
+    current_booking['total_cost'] = total_cost
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def create_new_client(client_id):
+    db = get_database_connection()
+    new_client = {
+        'name': '',
+        'sername': '',
+        'second_name': '',
+        'passport': '',
+        'birth_date': '',
+        'phone': '',
+    }
+    db.jsonset(f'c{client_id}', Path.rootPath(), new_client)
+    return new_client
+
+
+def add_booking_id_to_current_booking(client_id, booking_id):
+    current_booking = get_client_current_booking(client_id)
+    current_booking['booking_id'] = booking_id
+    set_client_current_booking(client_id, current_booking)
+    return current_booking
+
+
+def get_current_client(client_id):
+    db = get_database_connection()
+    current_client = db.jsonget(f'c{client_id}', Path.rootPath())
+    return current_client
+
+
+def update_current_client(client_id, key, new_value):
+    db = get_database_connection()
+    db.jsonset(f'c{client_id}', Path(f'.{key}'), new_value)
+    client = get_current_client(client_id)
+    logger.info(f'Update current client {client_id} personal data to {client}')
+    return client
+
+
+def clear_current_client(client_id):
+    db = get_database_connection()
+    db.jsonset(f'c{client_id}', Path.rootPath(), None)
+    logger.info(f'Clear {client_id} current personal data')
+
+
+def update_current_booking(booking_id, key, new_value):
+    db = get_database_connection()
+    db.jsonset(f'b{booking_id}', Path(f'.{key}'), new_value)
+    booking = get_client_current_booking(booking_id)
+    logger.info(f'Update current client {booking_id} personal data to {booking}')
+    return booking

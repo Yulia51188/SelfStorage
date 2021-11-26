@@ -1,6 +1,5 @@
 import logging
 import os
-from datetime import date
 from enum import Enum
 from textwrap import dedent
 
@@ -15,9 +14,9 @@ import db_processing
 
 
 logger = logging.getLogger(__name__)
-_booking = None
 
 MAX_PERIOD = {'season': 6, 'other': 12}
+BOT_PAYLOAD = 'StuffStorageBot'
 
 
 class States(Enum):
@@ -40,8 +39,9 @@ class States(Enum):
 
 
 def start(update, context):
-    global _booking
-    _booking = None
+    
+    db_processing.clear_client_booking(update.message.chat_id)
+    db_processing.clear_current_client(update.message.chat_id)
 
     update.message.reply_text(
         dedent('''\
@@ -66,8 +66,8 @@ def handle_unknown(update, context):
 
 
 def handle_cancel(update, context):
-    global _booking
-    _booking = None
+    db_processing.clear_client_booking(update.message.chat_id)
+    db_processing.clear_current_client(update.message.chat_id)
 
     update.message.reply_text(
         'Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!',
@@ -77,7 +77,10 @@ def handle_cancel(update, context):
 
 
 def handle_storage_choice(update, context):
-    create_new_booking(update.message)
+    db_processing.create_new_booking(
+        update.message.chat_id,
+        update.message.text,
+    )
     update.message.reply_text(
         'Что хотите хранить?',
         reply_markup=db_processing.create_categories_keyboard()
@@ -86,7 +89,10 @@ def handle_storage_choice(update, context):
 
 
 def handle_season_choice(update, context):
-    add_category_to_booking('season')
+    db_processing.add_category_to_booking(
+        update.message.chat_id,
+        'season',
+    )
     update.message.reply_text(
         'Выберите, какую вещи какого типа будете хранить',
         reply_markup=db_processing.create_season_keyboard()
@@ -95,7 +101,10 @@ def handle_season_choice(update, context):
 
 
 def handle_other_choice(update, context):
-    add_category_to_booking('other')
+    db_processing.add_category_to_booking(
+        update.message.chat_id,
+        'other',
+    )
     update.message.reply_text(
         'Выберите тип ячейки для хранения',
         reply_markup=db_processing.create_other_keyboard()
@@ -104,9 +113,12 @@ def handle_other_choice(update, context):
 
 
 def handle_choose_stuff(update, context):
-    add_stuff_to_booking(update.message.text)
-    
-    if _booking['category'] == 'other':
+    current_booking = db_processing.add_stuff_to_booking(
+        update.message.chat_id,
+        update.message.text,
+    )
+
+    if current_booking['category'] == 'other':
         message_text = 'Введите необходимую площадь ячейки от 1 кв.м.'
     else:
         message_text = 'Введите количество вещей для хранения'   
@@ -116,10 +128,12 @@ def handle_choose_stuff(update, context):
 
 
 def handle_input_count(update, context):
-    global _booking
 
-    add_count_to_booking(update.message.text)
-    is_week = db_processing.is_week_price_available(_booking)
+    current_booking = db_processing.add_count_to_booking(
+        update.message.chat_id,
+        update.message.text,
+    )
+    is_week = db_processing.is_week_price_available(current_booking)
 
     if is_week:
         update.message.reply_text(
@@ -128,7 +142,10 @@ def handle_input_count(update, context):
         )      
         return States.INPUT_PERIOD_TYPE
     
-    add_period_type_to_booking(is_week=False)            
+    db_processing.add_period_type_to_booking(
+        update.message.chat_id,
+        is_week=False
+    )            
     period_type = is_week and 'недель' or 'месяцев'
     update.message.reply_text(
         f'Введите на сколько {period_type} понадобится хранение'
@@ -138,7 +155,10 @@ def handle_input_count(update, context):
 
 def handle_period_type(update, context):
     is_week = update.message.text == 'Неделя'
-    add_period_type_to_booking(is_week)
+    db_processing.add_period_type_to_booking(
+        update.message.chat_id,
+        is_week,
+    )
     period_type = is_week and 'недель' or 'месяцев'
     update.message.reply_text(
         f'Введите на сколько {period_type} понадобится хранение'
@@ -146,38 +166,55 @@ def handle_period_type(update, context):
     return States.INPUT_PERIOD_LENGTH
 
 
-def handle_period_length(update, context):
-    global _booking
-    
+def handle_period_length(update, context):    
+    current_booking = db_processing.get_client_current_booking(
+        update.message.chat_id
+    )
+
     input_period = int(update.message.text)
-    max_period = MAX_PERIOD[_booking['category']]
-    if (_booking['period_type'] == 'month' and input_period > max_period):
+    max_period = MAX_PERIOD[current_booking['category']]
+    if (current_booking['period_type'] == 'month' and input_period > max_period):
         update.message.reply_text(
             f'Максимальный период хранения {max_period} месяцев. '
             'Введите период еще раз')
         return States.INPUT_PERIOD_LENGTH
     
-    add_period_length_to_booking(input_period)
-    add_booking_cost()
-    _booking['end_date'] = db_processing.get_end_date(
-        _booking['start_date'],
-        _booking['period_type'],
-        _booking['period_length'],
+    current_booking = db_processing.add_period_length_to_booking(
+        update.message.chat_id,
+        input_period,
+    )
+    current_booking = db_processing.add_booking_cost(update.message.chat_id)
+    current_booking['end_date'] = db_processing.get_end_date(
+        current_booking['start_date'],
+        current_booking['period_type'],
+        current_booking['period_length'],
+    )
+    db_processing.update_current_booking(
+        update.message.chat_id,
+        'end_date',
+        current_booking['end_date'],
     )
 
     update.message.reply_text(
-        db_processing.create_booking_message(_booking),
+        db_processing.create_booking_message(current_booking),
         reply_markup=db_processing.create_booking_keyboard()
     )
     return States.INVITE_TO_BOOKING
 
 
 def handle_confirm_booking(update, context):
-    global _booking
+
+    current_booking = db_processing.get_client_current_booking(
+        update.message.chat_id
+    )
+
+    current_booking['status'] = 'created'
+    booking_id = db_processing.add_booking(current_booking)
     
-    _booking['status'] = 'created'
-    booking_id = db_processing.add_booking(_booking)
-    _booking['booking_id'] = booking_id
+    db_processing.add_booking_id_to_current_booking(
+        update.message.chat_id,
+        booking_id,
+    )
 
     update.message.reply_text(
         dedent(f'''\
@@ -188,14 +225,18 @@ def handle_confirm_booking(update, context):
             
             Введите ваше Имя'''),
     )
-    create_new_client()
+    db_processing.create_new_client(update.message.chat_id)
     
     return States.INPUT_SERNAME
 
 
 def handle_input_sername(update, context):
-    global _client
-    _client['name'] = update.message.text
+
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'name',
+        update.message.text
+    )
     
     update.message.reply_text(
         'Введите вашу Фамилию'
@@ -204,8 +245,12 @@ def handle_input_sername(update, context):
 
 
 def handle_input_second_name(update, context):
-    global _client
-    _client['sername'] = update.message.text
+
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'sername',
+        update.message.text
+    )
      
     update.message.reply_text(
         'Введите ваше Отчество'
@@ -214,9 +259,12 @@ def handle_input_second_name(update, context):
 
 
 def handle_input_passport(update, context):
-    global _client
-    _client['second_name'] = update.message.text
-    
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'second_name',
+        update.message.text
+    )
+
     update.message.reply_text(
         'Введите серию и номер паспорта слитно'
     )
@@ -224,8 +272,11 @@ def handle_input_passport(update, context):
 
 
 def handle_input_birth_date(update, context):
-    global _client
-    _client['passport'] = update.message.text
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'passport',
+        update.message.text
+    )
     
     update.message.reply_text(
         dedent('''\
@@ -236,11 +287,14 @@ def handle_input_birth_date(update, context):
 
 
 def handle_input_phone(update, context):
-    global _client
-    _client['birth_date'] = update.message.text
-    
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'birth_date',
+        update.message.text
+    )
+
     update.message.reply_text(
-        dedent(f'''\
+        dedent('''\
             Введите свой номер телефона в формате:
             891144442233'''))
     
@@ -248,117 +302,52 @@ def handle_input_phone(update, context):
 
 
 def handle_add_client_to_db(update, context):
-    global _client, _booking
-    client_id = _booking["client_id"]
-    booking_id = _booking['booking_id']
-    _client['phone'] = update.message.text
-    db_processing.add_client_to_booking(_client, client_id)
-    _client = None
+    client_id = update.message.chat_id
     
+    current_client = db_processing.update_current_client(
+        update.message.chat_id,
+        'phone',
+        update.message.text
+    )
+    db_processing.add_client_personal_data_to_database(
+        client_id,
+        current_client
+    )
+    db_processing.clear_current_client(client_id)
+    
+    current_booking = db_processing.get_client_current_booking(client_id)
     update.message.reply_text(
         dedent('''\
             Ваши контактные данные записаны.
             Для начала оплаты нажмите кнопку "Оплата"'''),
-        reply_markup=db_processing.create_payment_keyboard(booking_id)
+        reply_markup=db_processing.create_payment_keyboard(
+            current_booking['booking_id'])
     )
  
     return States.PAYMENT_PART_1
 
 
-def create_new_booking(tg_message):
-    global _booking
-
-    storage_id, *_ = tg_message.text.split('.')
-    _booking = {
-        'storage_id': storage_id,
-        'client_id': str(tg_message.chat_id),
-    }
-    logger.info(f'New booking is {_booking}')
-
-
-def add_category_to_booking(category_name):
-    global _booking
-
-    _booking['category'] = category_name
-    logger.info(f'Update booking: {_booking}')
-
-
-def add_stuff_to_booking(button_text):
-    global _booking
-    
-    stuff_id, *_ = button_text.split('.')
-    _booking['item_id'] = stuff_id
-    logger.info(f'Update booking: {_booking}')
-
-
-def add_count_to_booking(count):
-    global _booking
-
-    _booking['count'] = int(count)
-    logger.info(f'Update booking: {_booking}')
-
-
-def add_period_type_to_booking(is_week=False):
-    global _booking
-
-    _booking['period_type'] = is_week and 'week' or 'month'
-    logger.info(f'Update booking: {_booking}')
-
-
-def add_period_length_to_booking(period_length, start_date=None):
-    global _booking
-
-    _booking['period_length'] = period_length
-
-    if not start_date:
-        _booking['start_date'] = date.today().isoformat()
-    else:
-        _booking['start_date'] = start_date
-    logger.info(f'Update booking: {_booking}')    
-
-
-def add_booking_cost():
-    global _booking
-    total_cost = db_processing.calculate_total_cost(_booking)
-
-    _booking['total_cost'] = total_cost
-    logger.info(f'Update booking: {_booking}')   
-
-
-def create_new_client():
-    global _client
-    
-    _client = {
-        'name': '',
-        'sername': '',
-        'second_name': '',
-        'passport': '',
-        'birth_date': '',
-        'phone': '',
-    }
-
-
 def handle_qrcode(update, context):
-    global _booking
+    
+    current_booking = db_processing.get_client_current_booking(
+        update.message.chat_id)
 
-    db = db_processing.get_database_connection()
-
-    if _booking['status'] == 'payed':
-        client_id = _booking["client_id"]
-        passport_series_and_number = db_processing.get_passport_series_and_number(db, client_id)
+    if current_booking['status'] == 'payed':
+        client_id = update.message.chat_id
+        passport_series_and_number = db_processing.get_passport(client_id)
         
         access_code = qr.create_access_code(passport_series_and_number)
-        _booking["access_code"] = access_code
+        current_booking["access_code"] = access_code
 
         db_processing.set_booking_access_code(
-            db, _booking["booking_id"],
+            current_booking["booking_id"],
             access_code
         )
 
         message_text = (
             f'Вот ваш электронный ключ для доступа к вашему личному складу. '
             f'Вы сможете попасть на склад в любое время в период '
-            f'с {_booking["start_date"]} по {_booking["end_date"]}'
+            f'с {current_booking["start_date"]} по {current_booking["end_date"]}'
         )
         context.bot.send_message(chat_id=client_id, text=message_text)
 
@@ -366,54 +355,55 @@ def handle_qrcode(update, context):
         with open(qrcode_image_path, 'rb') as qrcode_image:
             context.bot.send_photo(chat_id=client_id, photo=qrcode_image)
         os.remove(qrcode_image_path)
-        
-    _booking = None
-    return States.CHOOSE_STORAGE
+
+    return handle_cancel(update, context)
 
 
 def start_without_shipping_callback(update, context):
     """Sends an invoice without shipping-payment."""
-    global _booking, provider_token
+    global provider_token
     
-    chat_id = update.message.chat_id
+    client_id = update.message.chat_id
+    current_booking = db_processing.get_client_current_booking(client_id)
     
     title = "Оплата бронирования"
-    description = f"Оплата категории {_booking['category']}"
-    payload = _booking['client_id']
+    description = f"Оплата категории {current_booking['category']}"
+    payload = BOT_PAYLOAD
     currency = "RUB"
-    price = _booking['total_cost']
+    price = current_booking['total_cost']
     prices = [LabeledPrice("Test", price * 100)]
     
-    context.bot.send_invoice(
-        chat_id, title, description, payload, provider_token, currency, prices
-    )
+    context.bot.send_invoice(client_id, title, description, payload,
+                             provider_token, currency, prices)
     return States.PAYMENT_PART_2
 
 
 def precheckout_callback(update, context):
     """Answers the PreQecheckoutQuery"""
-    global _booking
     query = update.pre_checkout_query
     # check the payload, is this from your bot?
-    if query.invoice_payload != _booking['client_id']:
+    if query.invoice_payload != BOT_PAYLOAD:
         # answer False pre_checkout_query
         query.answer(ok=False, error_message="Something went wrong...")
-        _booking['status'] = 'payed'
+
     else:
         query.answer(ok=True)
 
 
 def successful_payment_callback(update, context):
-    global _booking
+    client_id = update.message.chat_id
+    current_booking = db_processing.get_client_current_booking(client_id)
     
-    booking_id = _booking['booking_id']
-    client_id = _booking["client_id"]
-    
-    _booking['status'] = 'payed'
-    db_processing.change_of_payment_status(booking_id, client_id)
+    db_processing.update_current_booking(
+        client_id,
+        'status',
+        'payed'
+    )
+    db_processing.change_of_payment_status(current_booking['booking_id'])
     update.message.reply_text(
-        dedent(f'Оплата прошла успешно'),
-        reply_markup=db_processing.create_qr_code_keyboard(booking_id)
+        dedent('Оплата прошла успешно'),
+        reply_markup=db_processing.create_qr_code_keyboard(
+            current_booking['booking_id'])
     )
     return States.CREATE_QR
     
@@ -554,7 +544,7 @@ def run_bot(tg_token):
 
 
 def main():
-    global provider_token
+    
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
@@ -562,6 +552,8 @@ def main():
 
     load_dotenv()
     tg_token = os.getenv('TG_TOKEN')
+
+    global provider_token
     provider_token = os.environ['PROVIDER_TOKEN']
 
     run_bot(tg_token)
