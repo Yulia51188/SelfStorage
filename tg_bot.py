@@ -198,7 +198,7 @@ def handle_input_sername(update, context):
     _client['name'] = update.message.text
     
     update.message.reply_text(
-        f'Введите вашу Фамилию'
+        'Введите вашу Фамилию'
     )
     return States.INPUT_SECOND_NAME
 
@@ -208,7 +208,7 @@ def handle_input_second_name(update, context):
     _client['sername'] = update.message.text
      
     update.message.reply_text(
-        f'Введите ваше Отчество'
+        'Введите ваше Отчество'
     )
     return States.INPUT_PASSPORT
 
@@ -218,7 +218,7 @@ def handle_input_passport(update, context):
     _client['second_name'] = update.message.text
     
     update.message.reply_text(
-        f'Введите серию и номер паспорта слитно'
+        'Введите серию и номер паспорта слитно'
     )
     return States.INPUT_BIRTH_DATE
 
@@ -228,7 +228,7 @@ def handle_input_birth_date(update, context):
     _client['passport'] = update.message.text
     
     update.message.reply_text(
-        dedent(f'''\
+        dedent('''\
             Введите свою дату рождения в формате
             ДД/ММ/ГГГГ'''))
     
@@ -343,7 +343,6 @@ def handle_qrcode(update, context):
 
     db = db_processing.get_database_connection()
 
-
     if _booking['status'] == 'payed':
         client_id = _booking["client_id"]
         passport_series_and_number = db_processing.get_passport_series_and_number(db, client_id)
@@ -388,6 +387,7 @@ def start_without_shipping_callback(update, context):
     )
     return States.PAYMENT_PART_2
 
+
 def precheckout_callback(update, context):
     """Answers the PreQecheckoutQuery"""
     global _booking
@@ -414,7 +414,6 @@ def successful_payment_callback(update, context):
         reply_markup=db_processing.create_qr_code_keyboard(booking_id)
     )
     return States.CREATE_QR
-
     
 
 def run_bot(tg_token):

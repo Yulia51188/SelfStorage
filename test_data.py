@@ -131,8 +131,12 @@ def get_database_connection():
     database_password = os.getenv("DB_PASSWORD", default=None)
     database_host = os.getenv("DB_HOST", default='localhost')
     database_port = os.getenv("DB_PORT", default=6379)
-    database = Client(host=database_host, port=database_port,
-        password=database_password, decode_responses=True)
+    database = Client(
+        host=database_host,
+        port=database_port,
+        password=database_password,
+        decode_responses=True
+    )
     return database
 
 
