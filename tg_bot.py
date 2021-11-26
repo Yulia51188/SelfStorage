@@ -379,7 +379,7 @@ def start_without_shipping_callback(update, context):
     
     title = "Оплата бронирования"
     description = f"Оплата категории {_booking['category']}"
-    payload = "Fuppergupper"
+    payload = _booking['client_id']
     currency = "RUB"
     price = _booking['total_cost']
     prices = [LabeledPrice("Test", price * 100)]
@@ -394,7 +394,7 @@ def precheckout_callback(update, context):
     global _booking
     query = update.pre_checkout_query
     # check the payload, is this from your bot?
-    if query.invoice_payload != 'Fuppergupper':
+    if query.invoice_payload != _booking['client_id']:
         # answer False pre_checkout_query
         query.answer(ok=False, error_message="Something went wrong...")
         _booking['status'] = 'payed'
