@@ -402,7 +402,7 @@ def create_new_client(client_id):
     db = get_database_connection()
     new_client = {
         'name': '',
-        'sername': '',
+        'surname': '',
         'second_name': '',
         'passport': '',
         'birth_date': '',

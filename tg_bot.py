@@ -27,7 +27,7 @@ class States(Enum):
     INPUT_PERIOD_TYPE = 5
     INPUT_PERIOD_LENGTH = 6
     INVITE_TO_BOOKING = 7
-    INPUT_SERNAME = 8
+    INPUT_SURNAME = 8
     INPUT_SECOND_NAME = 9
     INPUT_PASSPORT = 10
     INPUT_BIRTH_DATE = 11
@@ -223,23 +223,23 @@ def handle_confirm_booking(update, context):
             
             Для оплаты вам нужно указать свои личные данные
             
-            Введите ваше Имя'''),
+            Введите вашу Фамилию'''),
     )
     db_processing.create_new_client(update.message.chat_id)
     
-    return States.INPUT_SERNAME
+    return States.INPUT_SURNAME
 
 
-def handle_input_sername(update, context):
+def handle_input_surname(update, context):
 
     db_processing.update_current_client(
         update.message.chat_id,
-        'name',
+        'surname',
         update.message.text
     )
     
     update.message.reply_text(
-        'Введите вашу Фамилию'
+        'Введите ваше Имя'
     )
     return States.INPUT_SECOND_NAME
 
@@ -248,7 +248,7 @@ def handle_input_second_name(update, context):
 
     db_processing.update_current_client(
         update.message.chat_id,
-        'sername',
+        'name',
         update.message.text
     )
      
@@ -272,10 +272,13 @@ def handle_input_passport(update, context):
 
 
 def handle_input_birth_date(update, context):
+    
+    passport = update.message.text
+    
     db_processing.update_current_client(
         update.message.chat_id,
         'passport',
-        update.message.text
+        passport
     )
     
     update.message.reply_text(
@@ -467,10 +470,10 @@ def run_bot(tg_token):
                 ),
        
             ],
-            States.INPUT_SERNAME: [
+            States.INPUT_SURNAME: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
-                    handle_input_sername
+                    handle_input_surname
                 ),
        
             ],
