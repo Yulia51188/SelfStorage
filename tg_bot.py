@@ -11,6 +11,7 @@ from telegram.ext import (CommandHandler, ConversationHandler, Filters,
 
 import access_qrcode as qr
 import db_processing
+import check_input
 
 
 logger = logging.getLogger(__name__)
@@ -266,15 +267,24 @@ def handle_input_passport(update, context):
     )
 
     update.message.reply_text(
-        'Введите серию и номер паспорта слитно'
-    )
+    dedent('''\
+        Введите серию и номер паспорта слитно.
+        Принимается только пасспорт РФ, состоящий из цифр.
+        В зависимости от пасспорта в нем может быть 9 или 10 цифр.'''))
     return States.INPUT_BIRTH_DATE
 
 
 def handle_input_birth_date(update, context):
     
     passport = update.message.text
-    
+    if not check_input.check_passport(passport):
+        update.message.reply_text(
+        dedent(f'''\
+            Вы ввели некорректный номер паспорта.
+            Вы ввели: {passport}
+            Попробуйте еще раз.'''))
+        return INPUT_BIRTH_DATE
+
     db_processing.update_current_client(
         update.message.chat_id,
         'passport',
