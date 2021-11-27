@@ -403,12 +403,10 @@ def successful_payment_callback(update, context):
         'payed'
     )
     db_processing.change_of_payment_status(current_booking['booking_id'])
-    update.message.reply_text(
-        dedent('Оплата прошла успешно'),
-        reply_markup=db_processing.create_qr_code_keyboard(
-            current_booking['booking_id'])
-    )
-    return States.CREATE_QR
+    
+    update.message.reply_text('Оплата прошла успешно')
+    
+    handle_qrcode(update, context)
     
 
 def run_bot(tg_token):
@@ -524,14 +522,6 @@ def run_bot(tg_token):
                     successful_payment_callback
                 ),
             ],
-            
-            States.CREATE_QR: [
-                MessageHandler(
-                    Filters.regex('^Показать QR-код'),
-                    handle_qrcode
-                ),               
-            ]
-
         },
         fallbacks=[
             CommandHandler('start', start),
