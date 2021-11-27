@@ -120,7 +120,7 @@ def handle_choose_stuff(update, context):
     )
 
     if current_booking['category'] == 'other':
-        message_text = 'Введите необходимую площадь ячейки от 1 кв.м.'
+        message_text = 'Введите необходимую площадь ячейки от 1 до 10 кв.м.'
     else:
         message_text = 'Введите количество вещей для хранения'   
     
@@ -129,11 +129,21 @@ def handle_choose_stuff(update, context):
 
 
 def handle_input_count(update, context):
-
     current_booking = db_processing.add_count_to_booking(
         update.message.chat_id,
         update.message.text,
     )
+
+    input_count = int(update.message.text)
+    if input_count < 1 or input_count > 10:
+        if current_booking['category'] == 'other':
+            message_begin = 'Доступная площадь ячейки от 1 до 10 кв.м.'
+        else:
+            message_begin = 'Доступное количество вещей от 1 до 10.'   
+    
+        update.message.reply_text(f'{message_begin} Введите еще раз')      
+        return States.INPUT_COUNT       
+
     is_week = db_processing.is_week_price_available(current_booking)
 
     if is_week:
@@ -168,11 +178,17 @@ def handle_period_type(update, context):
 
 
 def handle_period_length(update, context):    
+    input_period = int(update.message.text)
+    
+    if input_period < 1:
+        update.message.reply_text('Минимальный период хранения - 1 месяц. '
+            'Введите период еще раз')
+        return States.INPUT_PERIOD_LENGTH
+
     current_booking = db_processing.get_client_current_booking(
         update.message.chat_id
     )
 
-    input_period = int(update.message.text)
     max_period = MAX_PERIOD[current_booking['category']]
     if (current_booking['period_type'] == 'month' and input_period > max_period):
         update.message.reply_text(
@@ -451,7 +467,7 @@ def run_bot(tg_token):
             ],
             States.INPUT_COUNT: [
                 MessageHandler(
-                    Filters.regex(r'^[1-9]+$'),
+                    Filters.regex(r'^[0-9]+$'),
                     handle_input_count
                 ),
             ],
@@ -467,7 +483,7 @@ def run_bot(tg_token):
             ],
             States.INPUT_PERIOD_LENGTH: [
                 MessageHandler(
-                    Filters.regex(r'^[1-9]+$'),
+                    Filters.regex(r'^[0-9]+$'),
                     handle_period_length
                 ),
             ],
