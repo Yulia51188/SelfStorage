@@ -324,19 +324,33 @@ def handle_input_phone(update, context):
 
     update.message.reply_text(
         dedent('''\
-            Введите свой номер телефона в формате:
-            891144442233'''))
+            Введите свой номер телефона.
+            Принимаются номера только Российских операторов, состоящие из 11 цифр, включая код старны.
+            Номер надо вводить через +7.
+            
+            Пример: +7 911 111 22 33
+            '''))
     
     return States.ADD_CLIENT_TO_DB
 
 
 def handle_add_client_to_db(update, context):
+    phone = update.message.text
+    if not check_input.check_phone(phone):
+        update.message.reply_text(
+        dedent(f'''\
+            Вы ввели некорректный номер телефона.
+            Вы ввели: {phone}
+            Попробуйте еще раз.'''))
+        return ADD_CLIENT_TO_DB
+
+    
     client_id = update.message.chat_id
     
     current_client = db_processing.update_current_client(
         update.message.chat_id,
         'phone',
-        update.message.text
+        phone
     )
     db_processing.add_client_personal_data_to_database(
         client_id,
