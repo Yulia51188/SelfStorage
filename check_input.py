@@ -1,4 +1,5 @@
 import time
+from datetime import date
 
 import phonenumbers
 
@@ -38,3 +39,19 @@ def check_birth_date(birth_date):
         return True
     except ValueError:
         return False
+
+
+def check_promo_code(promo_code):
+    current_date = date.today()
+    current_year = current_date.year
+    current_month = current_date.month
+    if (promo_code == 'storage2022' and
+            current_month == 3 and
+            current_year == 2022):
+        return 20, True
+    elif (promo_code == 'storage15' and
+          (current_month > 10 and current_year == 2021) or
+          (current_month < 5 and current_year == 2022)):
+        return 15, True
+
+    return 0, False
