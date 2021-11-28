@@ -156,6 +156,12 @@ def create_payment_keyboard(booking_id):
 
     keyboard = [
         [KeyboardButton(text=f'Оплатить {total_cost} руб.')],
+        [KeyboardButton(text='Сменить фамилию')],
+        [KeyboardButton(text='Сменить имя')],
+        [KeyboardButton(text='Сменить отчетство')],
+        [KeyboardButton(text='Сменить паспорт')],
+        [KeyboardButton(text='Сменить дату рождения')],
+        [KeyboardButton(text='Сменить номер телефона')],
         [KeyboardButton(text='Отмена')],
     ]
     reply_markup = ReplyKeyboardMarkup(
@@ -445,3 +451,11 @@ def update_current_booking(booking_id, key, new_value):
     booking = get_client_current_booking(booking_id)
     logger.info(f'Update current client {booking_id} personal data to {booking}')
     return booking
+
+
+def client_param_type(client_id):
+    db = get_database_connection()
+    current_client = db.jsonget(f'c{client_id}', Path.rootPath())
+    for param, value in current_client.items():
+        if not value:
+            return param

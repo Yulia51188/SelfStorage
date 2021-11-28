@@ -386,22 +386,178 @@ def handle_input_phone(update, context):
     )
     handle_client_verify(update, context)
     return States.CLIENT_VERIFY
+
+
+def handle_client_verify(update, context):
+    client_id = update.message.chat_id
+    current_client = db_processing.get_current_client(client_id)
+    current_booking = db_processing.get_client_current_booking(client_id)
+    
+    update.message.reply_text(
+        dedent(f'''\
+            Вот ваши контактные данные:
+            
+            Фамилия: {current_client['surname']}
+            Имя: {current_client['name']}
+            Отчество: {current_client['second_name']}
+            Паспорт: {current_client['passport']}
+            Дата рождения: {current_client['birth_date']}
+            Номер телефона: {current_client['phone']}
+            
+            Если вы ввели что-то не верно,
+            выберите что вы хотите поменять,
+            нажав соответсвующую кнопку.
+            
+            Если все введено верно, нажмите кнопку "Оплата"'''),
+        reply_markup=db_processing.create_payment_keyboard(
+            current_booking['booking_id'])
+    )
+
+
+def handle_add_client_to_db(update, context):
+    client_id = update.message.chat_id
+    current_client = db_processing.get_current_client(client_id)
     db_processing.add_client_personal_data_to_database(
         client_id,
         current_client
     )
     db_processing.clear_current_client(client_id)
     
-    current_booking = db_processing.get_client_current_booking(client_id)
+    update.message.reply_text(
+        'Ваши контактные данные записаны.'
+    )
+    
+    start_without_shipping_callback(update, context)
+    return States.PAYMENT
+
+
+def handle_remove_client_info(update, context):
+    client_id = update.message.chat_id
+    client_param_type = db_processing.client_param_type(client_id)
+    client_input = update.message.text
+    
+    if client_param_type == 'passport':
+        if not check_input.check_passport(client_input):
+            update.message.reply_text(
+            dedent(f'''\
+                Вы ввели некорректный номер паспорта.
+                Вы ввели: {client_input}
+                Попробуйте еще раз.'''))
+            return States.REMOVE_CLIENT_INFO
+    elif client_param_type == 'phone':
+        if not check_input.check_phone(client_input):
+            update.message.reply_text(
+            dedent(f'''\
+                Вы ввели некорректный номер телефона.
+                Вы ввели: {client_input}
+                Попробуйте еще раз.'''))
+            return States.REMOVE_CLIENT_INFO
+    elif client_param_type == 'birth_date':
+        if not check_input.check_birth_date(client_input):
+            update.message.reply_text(
+                dedent(f'''\
+                    Вы ввели некорректню дату рождения.
+                    Вы ввели: {client_input}
+                    Попробуйте еще раз.'''))
+            return States.REMOVE_CLIENT_INFO
+    else:
+        if not check_input.check_ru_letters(client_input):
+            update.message.reply_text(
+                dedent(f'''\
+                    Ошибка ввода {client_param_type}. Используйте только кирилицу.
+                    Вы ввели: {client_input}
+                    Попробуйте еще раз.'''))
+            return States.REMOVE_CLIENT_INFO
+        
+    db_processing.update_current_client(
+        client_id,
+        client_param_type,
+        client_input.title()
+    )
+    
+    handle_client_verify(update, context)
+    return States.CLIENT_VERIFY
+
+
+def handle_change_surname(update, context):
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'surname',
+        ''
+    )
+    update.message.reply_text(
+        'Введите вашу фамилию'
+    )
+    return States.REMOVE_CLIENT_INFO
+
+
+def handle_change_name(update, context):
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'name',
+        ''
+    )
+    update.message.reply_text(
+        'Введите ваше имя'
+    )
+    return States.REMOVE_CLIENT_INFO
+
+
+def handle_change_second_name(update, context):
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'second_name',
+        ''
+    )
+    update.message.reply_text(
+        'Введите вашу отчество'
+    )
+    return States.REMOVE_CLIENT_INFO
+
+
+def handle_change_passport(update, context):
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'passport',
+        ''
+    )
     update.message.reply_text(
         dedent('''\
-            Ваши контактные данные записаны.
-            Для начала оплаты нажмите кнопку "Оплата"'''),
-        reply_markup=db_processing.create_payment_keyboard(
-            current_booking['booking_id'])
+            Введите серию и номер паспорта слитно.
+            Принимается только пасспорт РФ, состоящий из цифр.
+            В зависимости от пасспорта в нем может быть 9 или 10 цифр.'''))
+    return States.REMOVE_CLIENT_INFO
+
+
+def handle_change_birth_date(update, context):
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'birth_date',
+        ''
     )
- 
-    return States.PAYMENT_PART_1
+    update.message.reply_text(
+        dedent('''\
+            Введите свою дату рождения в формате
+            ДД ММ ГГГГ
+            Значения вводятся через пробел.'''))
+    return States.REMOVE_CLIENT_INFO
+
+
+def handle_change_phone(update, context):
+    db_processing.update_current_client(
+        update.message.chat_id,
+        'phone',
+        ''
+    )
+    update.message.reply_text(
+        dedent('''\
+            Введите свой номер телефона.
+            Принимаются номера только Российских операторов, состоящие из 11 цифр, включая код старны.
+            Номер надо вводить через +7.
+            
+            Пример: +7 911 111 22 33
+            '''))
+    return States.REMOVE_CLIENT_INFO
 
 
 def handle_qrcode(update, context):
@@ -452,7 +608,6 @@ def start_without_shipping_callback(update, context):
     
     context.bot.send_invoice(client_id, title, description, payload,
                              provider_token, currency, prices)
-    return States.PAYMENT_PART_2
 
 
 def precheckout_callback(update, context):
@@ -550,6 +705,13 @@ def run_bot(tg_token):
                 ),
        
             ],
+            States.INPUT_NAME: [
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    handle_input_name
+                ),
+       
+            ],
             States.INPUT_SECOND_NAME: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
@@ -578,20 +740,45 @@ def run_bot(tg_token):
                 ),
        
             ],
-            States.ADD_CLIENT_TO_DB: [
+            States.CLIENT_VERIFY: [
                 MessageHandler(
-                    Filters.text & ~Filters.command,
+                    Filters.regex('^Сменить фамилию$'),
+                    handle_change_surname
+                ),
+                MessageHandler(
+                    Filters.regex('^Сменить имя$'),
+                    handle_change_name
+                ),
+                MessageHandler(
+                    Filters.regex('^Сменить отчетство$'),
+                    handle_change_second_name
+                ),
+                MessageHandler(
+                    Filters.regex('^Сменить паспорт$'),
+                    handle_change_passport
+                ),
+                MessageHandler(
+                    Filters.regex('^Сменить дату рождения$'),
+                    handle_change_birth_date
+                ),
+                MessageHandler(
+                    Filters.regex('^Сменить номер телефона$'),
+                    handle_change_phone
+                ),
+                MessageHandler(
+                    Filters.regex('^Оплатить'),
                     handle_add_client_to_db
                 ),
        
             ],
-            States.PAYMENT_PART_1: [
+            States.REMOVE_CLIENT_INFO: [
                 MessageHandler(
-                    Filters.regex('^Оплатить'),
-                    start_without_shipping_callback
+                    Filters.text & ~Filters.command,
+                    handle_remove_client_info
                 ),
+       
             ],
-            States.PAYMENT_PART_2: [
+            States.PAYMENT: [
                 MessageHandler(
                     Filters.successful_payment,
                     successful_payment_callback
