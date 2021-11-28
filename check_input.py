@@ -1,5 +1,6 @@
-import phonenumbers
 import time
+
+import phonenumbers
 
 
 def check_passport(passport):
@@ -7,7 +8,7 @@ def check_passport(passport):
     passport = passport.replace(' ', '')
 
     if (8 < len(passport) < 11
-        and len(passport) != passport.count('0')):
+            and len(passport) != passport.count('0')):
         return passport.isdigit()
     return False
 

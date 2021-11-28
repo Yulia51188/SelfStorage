@@ -1,9 +1,10 @@
-from datetime import timedelta, date
-from dateutil.relativedelta import relativedelta
-from rejson import Client, Path
 import logging
 import os
+from datetime import timedelta, date
 from textwrap import dedent
+
+from dateutil.relativedelta import relativedelta
+from rejson import Client, Path
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ def create_categories_keyboard():
 def create_other_keyboard():
     db = get_database_connection()
     category_stuffs = db.jsonget('prices', Path('.other'))
-    
+
     keyboard = []
     text_template = '''\
         {id}. {name} - {base_price} руб. 
@@ -90,7 +91,7 @@ def create_other_keyboard():
 def create_season_keyboard():
     db = get_database_connection()
     category_stuffs = db.jsonget('prices', Path('.season'))
-    
+
     keyboard = []
     week_template = '''\
         {id}. {name} 
@@ -151,7 +152,7 @@ def create_booking_keyboard():
 
 
 def create_payment_keyboard(booking_id):
-    db = get_database_connection()    
+    db = get_database_connection()
     total_cost = db.jsonget('bookings', Path(f'.{booking_id}.total_cost'))
 
     keyboard = [
@@ -169,11 +170,10 @@ def create_payment_keyboard(booking_id):
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    return reply_markup    
+    return reply_markup
 
 
 def create_qr_code_keyboard(booking_id):
-
     keyboard = [
         [KeyboardButton(text='Показать QR-код')],
     ]
@@ -187,9 +187,9 @@ def create_qr_code_keyboard(booking_id):
 
 def get_bookings_max_id():
     db = get_database_connection()
-    ids = [int(booking_id) for booking_id in 
+    ids = [int(booking_id) for booking_id in
            db.jsonobjkeys('bookings', Path.rootPath())]
-    return max(ids)    
+    return max(ids)
 
 
 def is_week_price_available(booking):
@@ -207,7 +207,7 @@ def calculate_total_cost(booking):
         Path(f'.{booking["category"]}.{booking["item_id"]}')
     )
     logger.info(f'Calculate total_cost for {stuff}')
-    
+
     if booking['category'] == 'other':
         base_price = stuff['base_price']
         additional_price = stuff['add_one_price']
@@ -221,7 +221,7 @@ def calculate_total_cost(booking):
 
 def get_end_date(start_date_iso, unit, period, correct_day=False):
     start_date = date.fromisoformat(start_date_iso)
-    
+
     if unit == 'week':
         end_date = start_date + timedelta(weeks=period)
     else:
@@ -231,7 +231,7 @@ def get_end_date(start_date_iso, unit, period, correct_day=False):
 
 
 def add_booking(booking):
-    db = get_database_connection()   
+    db = get_database_connection()
     booking_id = get_bookings_max_id() + 1
     db.jsonset('bookings', Path(f'.{booking_id}'), booking)
     logger.info(f'Set booking {booking_id} to db: {booking}')
@@ -260,13 +260,13 @@ def create_booking_message(booking):
         '''
 
     db = get_database_connection()
-    
+
     storage = db.jsonget('storages', Path(f'.{booking["storage_id"]}'))
     stuff = db.jsonget(
         'prices',
         Path(f'.{booking["category"]}.{booking["item_id"]}')
     )
-    
+
     if booking['category'] == 'other':
         count_name = 'Площадь ячейки для хранения, кв.м.'
     else:
@@ -294,7 +294,7 @@ def create_booking_message(booking):
 
 
 def get_passport(client_id):
-    db = get_database_connection() 
+    db = get_database_connection()
     passport_series_and_number = db.jsonget(
         'clients',
         Path(f'.{client_id}.passport')
@@ -303,7 +303,7 @@ def get_passport(client_id):
 
 
 def set_booking_access_code(booking_id, access_code):
-    db = get_database_connection()    
+    db = get_database_connection()
     db.jsonset(
         'bookings',
         Path(f'.{booking_id}.access_code'),
@@ -312,7 +312,7 @@ def set_booking_access_code(booking_id, access_code):
 
 
 def change_of_payment_status(booking_id):
-    db = get_database_connection()    
+    db = get_database_connection()
     db.jsonset('bookings', Path(f'.{booking_id}.status'), 'payed')
 
 
@@ -385,7 +385,7 @@ def add_period_type_to_booking(client_id, is_week=False):
 
 def add_period_length_to_booking(client_id, period_length, start_date=None):
     current_booking = get_client_current_booking(client_id)
-    
+
     current_booking['period_length'] = period_length
     if not start_date:
         current_booking['start_date'] = date.today().isoformat()

@@ -4,7 +4,7 @@ from enum import Enum
 from textwrap import dedent
 
 from dotenv import load_dotenv
-import telegram
+from telegram import LabeledPrice
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater, PreCheckoutQueryHandler)
 
@@ -600,7 +600,7 @@ def start_without_shipping_callback(update, context):
     payload = BOT_PAYLOAD
     currency = "RUB"
     price = current_booking['total_cost']
-    prices = [telegram.LabeledPrice("Test", price * 100)]
+    prices = [LabeledPrice("Test", price * 100)]
 
     context.bot.send_invoice(client_id, title, description, payload,
                              provider_token, currency, prices)
