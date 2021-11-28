@@ -1,4 +1,6 @@
 import phonenumbers
+import time
+
 
 def check_passport(passport):
     passport = passport.strip()
@@ -29,3 +31,9 @@ def check_ru_letters(user_input):
     return only_ru_letters == list(user_input.lower())
 
 
+def check_birth_date(birth_date):
+    try:
+        valid_date = time.strptime(birth_date, '%d %m %Y')
+        return True
+    except ValueError:
+        return False

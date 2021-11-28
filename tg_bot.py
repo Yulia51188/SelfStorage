@@ -335,12 +335,22 @@ def handle_input_birth_date(update, context):
     update.message.reply_text(
         dedent('''\
             Введите свою дату рождения в формате
-            ДД/ММ/ГГГГ'''))
+            ДД ММ ГГГГ
+            Значения вводятся через пробел.'''))
     
     return States.INPUT_PHONE
 
 
-def handle_input_phone(update, context):
+def handle_input_birth_date(update, context):
+    birth_date = update.message.text
+    if not check_input.check_birth_date(birth_date):
+        update.message.reply_text(
+        dedent(f'''\
+            Вы ввели некорректню дату рождения.
+            Вы ввели: {birth_date}
+            Попробуйте еще раз.'''))
+        return States.INPUT_BIRTH_DATE
+    
     db_processing.update_current_client(
         update.message.chat_id,
         'birth_date',
