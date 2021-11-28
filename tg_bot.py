@@ -248,38 +248,63 @@ def handle_confirm_booking(update, context):
 
 
 def handle_input_surname(update, context):
+    surname = update.message.text
+    if not check_input.check_ru_letters(surname):
+        update.message.reply_text(
+            dedent(f'''\
+                Вы ввели некорректную фамилию. Используйте только кирилицу.
+                Вы ввели: {surname}
+                Попробуйте еще раз.'''))
+        return States.INPUT_SURNAME
 
     db_processing.update_current_client(
         update.message.chat_id,
         'surname',
-        update.message.text
+        surname.title()
     )
     
     update.message.reply_text(
         'Введите ваше Имя'
     )
-    return States.INPUT_SECOND_NAME
+    return States.INPUT_NAME
 
 
-def handle_input_second_name(update, context):
-
+def handle_input_name(update, context):
+    name = update.message.text
+    if not check_input.check_ru_letters(name):
+        update.message.reply_text(
+            dedent(f'''\
+                Вы ввели некорректное имя. Используйте только кирилицу.
+                Вы ввели: {name}
+                Попробуйте еще раз.'''))
+        return States.INPUT_NAME
+    
     db_processing.update_current_client(
         update.message.chat_id,
         'name',
-        update.message.text
+        name.title()
     )
      
     update.message.reply_text(
         'Введите ваше Отчество'
     )
-    return States.INPUT_PASSPORT
+    return States.INPUT_SECOND_NAME
 
 
-def handle_input_passport(update, context):
+def handle_input_second_name(update, context):
+    second_name = update.message.text
+    if not check_input.check_ru_letters(second_name):
+        update.message.reply_text(
+        dedent(f'''\
+            Вы ввели некорректное отчество. Используйте только кирилицу.
+            Вы ввели: {second_name}
+            Попробуйте еще раз.'''))
+        return States.INPUT_SECOND_NAME
+    
     db_processing.update_current_client(
         update.message.chat_id,
         'second_name',
-        update.message.text
+        second_name.title()
     )
 
     update.message.reply_text(

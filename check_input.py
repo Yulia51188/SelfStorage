@@ -20,3 +20,12 @@ def check_phone(phone):
 
     except phonenumbers.phonenumberutil.NumberParseException:
         return False
+
+
+def check_ru_letters(user_input):
+    ru_alphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+    only_ru_letters = [letter for letter in user_input.lower()
+                       if letter in ru_alphabet]
+    return only_ru_letters == list(user_input.lower())
+
+
