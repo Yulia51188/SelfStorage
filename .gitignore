@@ -131,3 +131,6 @@ dmypy.json
 # local
 /temp
 /qrcodes
+
+#IDE
+.idea
