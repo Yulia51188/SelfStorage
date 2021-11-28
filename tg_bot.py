@@ -4,7 +4,7 @@ from enum import Enum
 from textwrap import dedent
 
 from dotenv import load_dotenv
-from telegram import LabeledPrice
+import telegram
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater, PreCheckoutQueryHandler)
 
@@ -248,7 +248,7 @@ def handle_input_surname(update, context):
     if not check_input.check_ru_letters(surname):
         update.message.reply_text(
             dedent(f'''\
-                Вы ввели некорректную фамилию. Используйте только кирилицу.
+                Вы ввели некорректную фамилию. Используйте только кириллицу.
                 Вы ввели: {surname}
                 Попробуйте еще раз.'''))
         return States.INPUT_SURNAME
@@ -270,7 +270,7 @@ def handle_input_name(update, context):
     if not check_input.check_ru_letters(name):
         update.message.reply_text(
             dedent(f'''\
-                Вы ввели некорректное имя. Используйте только кирилицу.
+                Вы ввели некорректное имя. Используйте только кириллицу.
                 Вы ввели: {name}
                 Попробуйте еще раз.'''))
         return States.INPUT_NAME
@@ -292,7 +292,7 @@ def handle_input_second_name(update, context):
     if not check_input.check_ru_letters(second_name):
         update.message.reply_text(
             dedent(f'''\
-            Вы ввели некорректное отчество. Используйте только кирилицу.
+            Вы ввели некорректное отчество. Используйте только кириллицу.
             Вы ввели: {second_name}
             Попробуйте еще раз.'''))
         return States.INPUT_SECOND_NAME
@@ -306,8 +306,8 @@ def handle_input_second_name(update, context):
     update.message.reply_text(
         dedent('''\
         Введите серию и номер паспорта слитно.
-        Принимается только пасспорт РФ, состоящий из цифр.
-        В зависимости от пасспорта в нем может быть 9 или 10 цифр.'''))
+        Принимается только паспорт РФ, состоящий из цифр.
+        В зависимости от паспорта в нем может быть 9 или 10 цифр.'''))
     return States.INPUT_PASSPORT
 
 
@@ -341,7 +341,7 @@ def handle_input_birth_date(update, context):
     if not check_input.check_birth_date(birth_date):
         update.message.reply_text(
             dedent(f'''\
-            Вы ввели некорректню дату рождения.
+            Вы ввели некорректную дату рождения.
             Вы ввели: {birth_date}
             Попробуйте еще раз.'''))
         return States.INPUT_BIRTH_DATE
@@ -403,7 +403,7 @@ def handle_client_verify(update, context):
             
             Если вы ввели что-то не верно,
             выберите что вы хотите поменять,
-            нажав соответсвующую кнопку.
+            нажав соответствующую кнопку.
             
             Если все введено верно, нажмите кнопку "Оплата"'''),
         reply_markup=db_processing.create_payment_keyboard(
@@ -453,7 +453,7 @@ def handle_remove_client_info(update, context):
         if not check_input.check_birth_date(client_input):
             update.message.reply_text(
                 dedent(f'''\
-                    Вы ввели некорректню дату рождения.
+                    Вы ввели некорректную дату рождения.
                     Вы ввели: {client_input}
                     Попробуйте еще раз.'''))
             return States.REMOVE_CLIENT_INFO
@@ -461,7 +461,7 @@ def handle_remove_client_info(update, context):
         if not check_input.check_ru_letters(client_input):
             update.message.reply_text(
                 dedent(f'''\
-                    Ошибка ввода {client_param_type}. Используйте только кирилицу.
+                    Ошибка ввода {client_param_type}. Используйте только кириллицу.
                     Вы ввели: {client_input}
                     Попробуйте еще раз.'''))
             return States.REMOVE_CLIENT_INFO
@@ -521,8 +521,8 @@ def handle_change_passport(update, context):
     update.message.reply_text(
         dedent('''\
             Введите серию и номер паспорта слитно.
-            Принимается только пасспорт РФ, состоящий из цифр.
-            В зависимости от пасспорта в нем может быть 9 или 10 цифр.'''))
+            Принимается только паспорт РФ, состоящий из цифр.
+            В зависимости от паспорта в нем может быть 9 или 10 цифр.'''))
     return States.REMOVE_CLIENT_INFO
 
 
@@ -600,7 +600,7 @@ def start_without_shipping_callback(update, context):
     payload = BOT_PAYLOAD
     currency = "RUB"
     price = current_booking['total_cost']
-    prices = [LabeledPrice("Test", price * 100)]
+    prices = [telegram.LabeledPrice("Test", price * 100)]
 
     context.bot.send_invoice(client_id, title, description, payload,
                              provider_token, currency, prices)
@@ -746,7 +746,7 @@ def run_bot(tg_token):
                     handle_change_name
                 ),
                 MessageHandler(
-                    Filters.regex('^Сменить отчетство$'),
+                    Filters.regex('^Сменить отчество$'),
                     handle_change_second_name
                 ),
                 MessageHandler(
