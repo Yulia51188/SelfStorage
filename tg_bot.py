@@ -447,7 +447,8 @@ def successful_payment_callback(update, context):
     update.message.reply_text('Оплата прошла успешно')
     
     handle_qrcode(update, context)
-    
+    return States.CHOOSE_STORAGE
+
 
 def run_bot(tg_token):
     updater = Updater(tg_token)
