@@ -160,23 +160,11 @@ def create_payment_keyboard(booking_id):
         [KeyboardButton(text=f'Оплатить {discounted_price} руб.')],
         [KeyboardButton(text='Сменить фамилию')],
         [KeyboardButton(text='Сменить имя')],
-        [KeyboardButton(text='Сменить отчетство')],
+        [KeyboardButton(text='Сменить отчество')],
         [KeyboardButton(text='Сменить паспорт')],
         [KeyboardButton(text='Сменить дату рождения')],
         [KeyboardButton(text='Сменить номер телефона')],
         [KeyboardButton(text='Отмена')],
-    ]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_qr_code_keyboard(booking_id):
-    keyboard = [
-        [KeyboardButton(text='Показать QR-код')],
     ]
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
