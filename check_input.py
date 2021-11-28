@@ -4,7 +4,8 @@ def check_passport(passport):
     passport = passport.strip()
     passport = passport.replace(' ', '')
 
-    if 8 < len(passport) < 11:
+    if (8 < len(passport) < 11
+        and len(passport) != passport.count('0')):
         return passport.isdigit()
     return False
 
