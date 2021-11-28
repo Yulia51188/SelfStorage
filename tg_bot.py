@@ -29,16 +29,16 @@ class States(Enum):
     INPUT_PERIOD_LENGTH = 6
     INVITE_TO_BOOKING = 7
     INPUT_SURNAME = 8
-    INPUT_SECOND_NAME = 9
-    INPUT_PASSPORT = 10
-    INPUT_BIRTH_DATE = 11
-    INPUT_PHONE = 12
-    ADD_CLIENT_TO_DB = 13
-    PAYMENT_PART_1 = 14
-    PAYMENT_PART_2 = 15
-    CREATE_QR = 16
-
-
+    INPUT_NAME = 9
+    INPUT_SECOND_NAME = 10
+    INPUT_PASSPORT = 11
+    INPUT_BIRTH_DATE = 12
+    INPUT_PHONE = 13
+    PAYMENT = 14
+    CLIENT_VERIFY = 15
+    REMOVE_CLIENT_INFO = 16
+    
+    
 def start(update, context):
     
     db_processing.clear_client_booking(update.message.chat_id)
@@ -312,11 +312,10 @@ def handle_input_second_name(update, context):
         Введите серию и номер паспорта слитно.
         Принимается только пасспорт РФ, состоящий из цифр.
         В зависимости от пасспорта в нем может быть 9 или 10 цифр.'''))
-    return States.INPUT_BIRTH_DATE
+    return States.INPUT_PASSPORT
 
 
-def handle_input_birth_date(update, context):
-    
+def handle_input_passport(update, context):
     passport = update.message.text
     if not check_input.check_passport(passport):
         update.message.reply_text(
@@ -324,7 +323,7 @@ def handle_input_birth_date(update, context):
             Вы ввели некорректный номер паспорта.
             Вы ввели: {passport}
             Попробуйте еще раз.'''))
-        return INPUT_BIRTH_DATE
+        return States.INPUT_PASSPORT
 
     db_processing.update_current_client(
         update.message.chat_id,
@@ -338,7 +337,7 @@ def handle_input_birth_date(update, context):
             ДД ММ ГГГГ
             Значения вводятся через пробел.'''))
     
-    return States.INPUT_PHONE
+    return States.INPUT_BIRTH_DATE
 
 
 def handle_input_birth_date(update, context):
@@ -366,27 +365,27 @@ def handle_input_birth_date(update, context):
             Пример: +7 911 111 22 33
             '''))
     
-    return States.ADD_CLIENT_TO_DB
+    return States.INPUT_PHONE
 
-
-def handle_add_client_to_db(update, context):
+def handle_input_phone(update, context):
     phone = update.message.text
+    client_id = update.message.chat_id
+
     if not check_input.check_phone(phone):
         update.message.reply_text(
         dedent(f'''\
             Вы ввели некорректный номер телефона.
             Вы ввели: {phone}
             Попробуйте еще раз.'''))
-        return ADD_CLIENT_TO_DB
+        return States.INPUT_PHONE
 
-    
-    client_id = update.message.chat_id
-    
-    current_client = db_processing.update_current_client(
+    db_processing.update_current_client(
         update.message.chat_id,
         'phone',
         phone
     )
+    handle_client_verify(update, context)
+    return States.CLIENT_VERIFY
     db_processing.add_client_personal_data_to_database(
         client_id,
         current_client
