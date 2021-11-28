@@ -140,6 +140,7 @@ def create_period_keyboard():
 
 def create_booking_keyboard():
     keyboard = [
+        [KeyboardButton(text='Ввести промокод')],
         [KeyboardButton(text='Забронировать')],
         [KeyboardButton(text='Отмена')],
     ]
@@ -153,10 +154,10 @@ def create_booking_keyboard():
 
 def create_payment_keyboard(booking_id):
     db = get_database_connection()
-    total_cost = db.jsonget('bookings', Path(f'.{booking_id}.total_cost'))
+    discounted_price = db.jsonget('bookings', Path(f'.{booking_id}.discounted_price'))
 
     keyboard = [
-        [KeyboardButton(text=f'Оплатить {total_cost} руб.')],
+        [KeyboardButton(text=f'Оплатить {discounted_price} руб.')],
         [KeyboardButton(text='Сменить фамилию')],
         [KeyboardButton(text='Сменить имя')],
         [KeyboardButton(text='Сменить отчетство')],
@@ -256,7 +257,13 @@ def create_booking_message(booking):
         Период: {period} {period_units}
         Доступ к ячейке с {start_date} по {end_date}
         
-        Сумма к оплате: {total_cost} руб. 
+        Размер скидки: {promo_code}%
+        Сумма к оплате: {discounted_price} руб.
+        
+        Если у вас есть промокод, вы можете ввести его,
+        нажав на кнопку "Ввести промокод".
+        
+        Для бронирования нажмите кнопку "Забронировать"
         '''
 
     db = get_database_connection()
@@ -288,7 +295,8 @@ def create_booking_message(booking):
         period_units=period_units,
         start_date=convert_to_ruformat(booking['start_date']),
         end_date=convert_to_ruformat(booking['end_date']),
-        total_cost=booking['total_cost'],
+        discounted_price=booking['discounted_price'],
+        promo_code=booking['promo_code'],
     )
     return dedent(message_text)
 
@@ -398,8 +406,9 @@ def add_period_length_to_booking(client_id, period_length, start_date=None):
 def add_booking_cost(client_id):
     current_booking = get_client_current_booking(client_id)
     total_cost = calculate_total_cost(current_booking)
-
+    current_booking['promo_code'] = 0
     current_booking['total_cost'] = total_cost
+    current_booking['discounted_price'] = total_cost
     set_client_current_booking(client_id, current_booking)
     return current_booking
 

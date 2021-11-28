@@ -35,6 +35,9 @@ class States(Enum):
     PAYMENT = 14
     CLIENT_VERIFY = 15
     REMOVE_CLIENT_INFO = 16
+    INPUT_PROMO_CODE = 17
+    CONFIRM_BOOKING = 18
+    CHECK_PROMO_CODE = 19
 
 
 def start(update, context):
@@ -193,7 +196,7 @@ def handle_period_length(update, context):
             'Введите период еще раз')
         return States.INPUT_PERIOD_LENGTH
 
-    current_booking = db_processing.add_period_length_to_booking(
+    db_processing.add_period_length_to_booking(
         update.message.chat_id,
         input_period,
     )
@@ -209,18 +212,68 @@ def handle_period_length(update, context):
         current_booking['end_date'],
     )
 
-    update.message.reply_text(
-        db_processing.create_booking_message(current_booking),
-        reply_markup=db_processing.create_booking_keyboard()
-    )
-    return States.INVITE_TO_BOOKING
+    handle_confirm_booking(update, context)
+    return States.CONFIRM_BOOKING
 
 
 def handle_confirm_booking(update, context):
     current_booking = db_processing.get_client_current_booking(
         update.message.chat_id
     )
+    update.message.reply_text(
+        db_processing.create_booking_message(current_booking),
+        reply_markup=db_processing.create_booking_keyboard()
+    )
 
+    return States.CONFIRM_BOOKING
+
+
+def handle_input_promo_code(update, context):
+    update.message.reply_text(
+        'Введите ваш промокод'
+    )
+    return States.CHECK_PROMO_CODE
+
+
+def handle_check_promo_code(update, context):
+    promo_code = update.message.text
+    p_code_value, p_code_check = check_input.check_promo_code(promo_code)
+    if not p_code_check:
+        update.message.reply_text(
+            dedent(f'''\
+                Вы ввели несуществующий промокод.
+                Вы ввели: {promo_code}
+                Попробуйте еще раз. Нажав на кнопку "Ввести промокод" '''))
+
+        handle_confirm_booking(update, context)
+        return States.CONFIRM_BOOKING
+
+    client_id = update.message.chat_id
+    current_booking = db_processing.get_client_current_booking(
+        client_id
+    )
+    db_processing.update_current_booking(
+        client_id,
+        'promo_code',
+        p_code_value,
+    )
+    db_processing.update_current_booking(
+        client_id,
+        'discounted_price',
+        current_booking['total_cost'] * (1 - p_code_value / 100),
+    )
+    update.message.reply_text(
+        'Промокод принят '
+    )
+    handle_confirm_booking(update, context)
+    return States.CONFIRM_BOOKING
+
+
+def handle_start_input_full_name(update, context):
+    client_id = update.message.chat_id
+    current_booking = db_processing.get_client_current_booking(
+        client_id
+    )
     current_booking['status'] = 'created'
     booking_id = db_processing.add_booking(current_booking)
 
@@ -238,7 +291,7 @@ def handle_confirm_booking(update, context):
             
             Введите вашу Фамилию'''),
     )
-    db_processing.create_new_client(update.message.chat_id)
+    db_processing.create_new_client(client_id)
 
     return States.INPUT_SURNAME
 
@@ -599,8 +652,8 @@ def start_without_shipping_callback(update, context):
     description = f"Оплата категории {current_booking['category']}"
     payload = BOT_PAYLOAD
     currency = "RUB"
-    price = current_booking['total_cost']
-    prices = [LabeledPrice("Test", price * 100)]
+    price = current_booking['discounted_price']
+    prices = [LabeledPrice("Test", int(price * 100))]
 
     context.bot.send_invoice(client_id, title, description, payload,
                              provider_token, currency, prices)
@@ -687,10 +740,21 @@ def run_bot(tg_token):
                     handle_period_length
                 ),
             ],
-            States.INVITE_TO_BOOKING: [
+            States.CONFIRM_BOOKING: [
+                MessageHandler(
+                    Filters.regex('^Ввести промокод'),
+                    handle_input_promo_code
+                ),
                 MessageHandler(
                     Filters.regex('^Забронировать$'),
-                    handle_confirm_booking
+                    handle_start_input_full_name
+                ),
+
+            ],
+            States.CHECK_PROMO_CODE: [
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    handle_check_promo_code
                 ),
 
             ],
