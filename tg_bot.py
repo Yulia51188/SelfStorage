@@ -4,15 +4,13 @@ from enum import Enum
 from textwrap import dedent
 
 from dotenv import load_dotenv
-
 from telegram import LabeledPrice
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater, PreCheckoutQueryHandler)
 
 import access_qrcode as qr
-import db_processing
 import check_input
-
+import db_processing
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +35,9 @@ class States(Enum):
     PAYMENT = 14
     CLIENT_VERIFY = 15
     REMOVE_CLIENT_INFO = 16
-    
-    
+
+
 def start(update, context):
-    
     db_processing.clear_client_booking(update.message.chat_id)
     db_processing.clear_current_client(update.message.chat_id)
 
@@ -85,7 +82,7 @@ def handle_storage_choice(update, context):
     update.message.reply_text(
         'Что хотите хранить?',
         reply_markup=db_processing.create_categories_keyboard()
-    )    
+    )
     return States.CHOOSE_CATEGORY
 
 
@@ -97,7 +94,7 @@ def handle_season_choice(update, context):
     update.message.reply_text(
         'Выберите, вещи какого типа будете хранить',
         reply_markup=db_processing.create_season_keyboard()
-    ) 
+    )
     return States.CHOOSE_STUFF
 
 
@@ -109,7 +106,7 @@ def handle_other_choice(update, context):
     update.message.reply_text(
         'Выберите тип ячейки для хранения',
         reply_markup=db_processing.create_other_keyboard()
-    )     
+    )
     return States.CHOOSE_STUFF
 
 
@@ -122,9 +119,9 @@ def handle_choose_stuff(update, context):
     if current_booking['category'] == 'other':
         message_text = 'Введите необходимую площадь ячейки от 1 до 10 кв.м.'
     else:
-        message_text = 'Введите количество вещей для хранения'   
-    
-    update.message.reply_text(message_text)      
+        message_text = 'Введите количество вещей для хранения'
+
+    update.message.reply_text(message_text)
     return States.INPUT_COUNT
 
 
@@ -139,10 +136,10 @@ def handle_input_count(update, context):
         if current_booking['category'] == 'other':
             message_begin = 'Доступная площадь ячейки от 1 до 10 кв.м.'
         else:
-            message_begin = 'Доступное количество вещей от 1 до 10.'   
-    
-        update.message.reply_text(f'{message_begin} Введите еще раз')      
-        return States.INPUT_COUNT       
+            message_begin = 'Доступное количество вещей от 1 до 10.'
+
+        update.message.reply_text(f'{message_begin} Введите еще раз')
+        return States.INPUT_COUNT
 
     is_week = db_processing.is_week_price_available(current_booking)
 
@@ -150,17 +147,17 @@ def handle_input_count(update, context):
         update.message.reply_text(
             'Выберите, в чем будет измерятся период хранения: недели или месяцы?',
             reply_markup=db_processing.create_period_keyboard()
-        )      
+        )
         return States.INPUT_PERIOD_TYPE
-    
+
     db_processing.add_period_type_to_booking(
         update.message.chat_id,
         is_week=False
-    )            
+    )
     period_type = is_week and 'недель' or 'месяцев'
     update.message.reply_text(
         f'Введите на сколько {period_type} понадобится хранение'
-    ) 
+    )
     return States.INPUT_PERIOD_LENGTH
 
 
@@ -173,16 +170,16 @@ def handle_period_type(update, context):
     period_type = is_week and 'недель' or 'месяцев'
     update.message.reply_text(
         f'Введите на сколько {period_type} понадобится хранение'
-    ) 
+    )
     return States.INPUT_PERIOD_LENGTH
 
 
-def handle_period_length(update, context):    
+def handle_period_length(update, context):
     input_period = int(update.message.text)
-    
+
     if input_period < 1:
         update.message.reply_text('Минимальный период хранения - 1 месяц. '
-            'Введите период еще раз')
+                                  'Введите период еще раз')
         return States.INPUT_PERIOD_LENGTH
 
     current_booking = db_processing.get_client_current_booking(
@@ -195,7 +192,7 @@ def handle_period_length(update, context):
             f'Максимальный период хранения {max_period} месяцев. '
             'Введите период еще раз')
         return States.INPUT_PERIOD_LENGTH
-    
+
     current_booking = db_processing.add_period_length_to_booking(
         update.message.chat_id,
         input_period,
@@ -220,14 +217,13 @@ def handle_period_length(update, context):
 
 
 def handle_confirm_booking(update, context):
-
     current_booking = db_processing.get_client_current_booking(
         update.message.chat_id
     )
 
     current_booking['status'] = 'created'
     booking_id = db_processing.add_booking(current_booking)
-    
+
     db_processing.add_booking_id_to_current_booking(
         update.message.chat_id,
         booking_id,
@@ -243,7 +239,7 @@ def handle_confirm_booking(update, context):
             Введите вашу Фамилию'''),
     )
     db_processing.create_new_client(update.message.chat_id)
-    
+
     return States.INPUT_SURNAME
 
 
@@ -262,7 +258,7 @@ def handle_input_surname(update, context):
         'surname',
         surname.title()
     )
-    
+
     update.message.reply_text(
         'Введите ваше Имя'
     )
@@ -278,13 +274,13 @@ def handle_input_name(update, context):
                 Вы ввели: {name}
                 Попробуйте еще раз.'''))
         return States.INPUT_NAME
-    
+
     db_processing.update_current_client(
         update.message.chat_id,
         'name',
         name.title()
     )
-     
+
     update.message.reply_text(
         'Введите ваше Отчество'
     )
@@ -295,12 +291,12 @@ def handle_input_second_name(update, context):
     second_name = update.message.text
     if not check_input.check_ru_letters(second_name):
         update.message.reply_text(
-        dedent(f'''\
+            dedent(f'''\
             Вы ввели некорректное отчество. Используйте только кирилицу.
             Вы ввели: {second_name}
             Попробуйте еще раз.'''))
         return States.INPUT_SECOND_NAME
-    
+
     db_processing.update_current_client(
         update.message.chat_id,
         'second_name',
@@ -308,7 +304,7 @@ def handle_input_second_name(update, context):
     )
 
     update.message.reply_text(
-    dedent('''\
+        dedent('''\
         Введите серию и номер паспорта слитно.
         Принимается только пасспорт РФ, состоящий из цифр.
         В зависимости от пасспорта в нем может быть 9 или 10 цифр.'''))
@@ -319,7 +315,7 @@ def handle_input_passport(update, context):
     passport = update.message.text
     if not check_input.check_passport(passport):
         update.message.reply_text(
-        dedent(f'''\
+            dedent(f'''\
             Вы ввели некорректный номер паспорта.
             Вы ввели: {passport}
             Попробуйте еще раз.'''))
@@ -330,13 +326,13 @@ def handle_input_passport(update, context):
         'passport',
         passport
     )
-    
+
     update.message.reply_text(
         dedent('''\
             Введите свою дату рождения в формате
             ДД ММ ГГГГ
             Значения вводятся через пробел.'''))
-    
+
     return States.INPUT_BIRTH_DATE
 
 
@@ -344,12 +340,12 @@ def handle_input_birth_date(update, context):
     birth_date = update.message.text
     if not check_input.check_birth_date(birth_date):
         update.message.reply_text(
-        dedent(f'''\
+            dedent(f'''\
             Вы ввели некорректню дату рождения.
             Вы ввели: {birth_date}
             Попробуйте еще раз.'''))
         return States.INPUT_BIRTH_DATE
-    
+
     db_processing.update_current_client(
         update.message.chat_id,
         'birth_date',
@@ -364,8 +360,9 @@ def handle_input_birth_date(update, context):
             
             Пример: +7 911 111 22 33
             '''))
-    
+
     return States.INPUT_PHONE
+
 
 def handle_input_phone(update, context):
     phone = update.message.text
@@ -373,7 +370,7 @@ def handle_input_phone(update, context):
 
     if not check_input.check_phone(phone):
         update.message.reply_text(
-        dedent(f'''\
+            dedent(f'''\
             Вы ввели некорректный номер телефона.
             Вы ввели: {phone}
             Попробуйте еще раз.'''))
@@ -392,7 +389,7 @@ def handle_client_verify(update, context):
     client_id = update.message.chat_id
     current_client = db_processing.get_current_client(client_id)
     current_booking = db_processing.get_client_current_booking(client_id)
-    
+
     update.message.reply_text(
         dedent(f'''\
             Вот ваши контактные данные:
@@ -422,11 +419,11 @@ def handle_add_client_to_db(update, context):
         current_client
     )
     db_processing.clear_current_client(client_id)
-    
+
     update.message.reply_text(
         'Ваши контактные данные записаны.'
     )
-    
+
     start_without_shipping_callback(update, context)
     return States.PAYMENT
 
@@ -435,11 +432,11 @@ def handle_remove_client_info(update, context):
     client_id = update.message.chat_id
     client_param_type = db_processing.client_param_type(client_id)
     client_input = update.message.text
-    
+
     if client_param_type == 'passport':
         if not check_input.check_passport(client_input):
             update.message.reply_text(
-            dedent(f'''\
+                dedent(f'''\
                 Вы ввели некорректный номер паспорта.
                 Вы ввели: {client_input}
                 Попробуйте еще раз.'''))
@@ -447,7 +444,7 @@ def handle_remove_client_info(update, context):
     elif client_param_type == 'phone':
         if not check_input.check_phone(client_input):
             update.message.reply_text(
-            dedent(f'''\
+                dedent(f'''\
                 Вы ввели некорректный номер телефона.
                 Вы ввели: {client_input}
                 Попробуйте еще раз.'''))
@@ -468,13 +465,13 @@ def handle_remove_client_info(update, context):
                     Вы ввели: {client_input}
                     Попробуйте еще раз.'''))
             return States.REMOVE_CLIENT_INFO
-        
+
     db_processing.update_current_client(
         client_id,
         client_param_type,
         client_input.title()
     )
-    
+
     handle_client_verify(update, context)
     return States.CLIENT_VERIFY
 
@@ -561,14 +558,13 @@ def handle_change_phone(update, context):
 
 
 def handle_qrcode(update, context):
-    
     current_booking = db_processing.get_client_current_booking(
         update.message.chat_id)
 
     if current_booking['status'] == 'payed':
         client_id = update.message.chat_id
         passport_series_and_number = db_processing.get_passport(client_id)
-        
+
         access_code = qr.create_access_code(passport_series_and_number)
         current_booking["access_code"] = access_code
 
@@ -595,17 +591,17 @@ def handle_qrcode(update, context):
 def start_without_shipping_callback(update, context):
     """Sends an invoice without shipping-payment."""
     global provider_token
-    
+
     client_id = update.message.chat_id
     current_booking = db_processing.get_client_current_booking(client_id)
-    
+
     title = "Оплата бронирования"
     description = f"Оплата категории {current_booking['category']}"
     payload = BOT_PAYLOAD
     currency = "RUB"
     price = current_booking['total_cost']
     prices = [LabeledPrice("Test", price * 100)]
-    
+
     context.bot.send_invoice(client_id, title, description, payload,
                              provider_token, currency, prices)
 
@@ -625,16 +621,16 @@ def precheckout_callback(update, context):
 def successful_payment_callback(update, context):
     client_id = update.message.chat_id
     current_booking = db_processing.get_client_current_booking(client_id)
-    
+
     db_processing.update_current_booking(
         client_id,
         'status',
         'payed'
     )
     db_processing.change_of_payment_status(current_booking['booking_id'])
-    
+
     update.message.reply_text('Оплата прошла успешно')
-    
+
     handle_qrcode(update, context)
     return States.CHOOSE_STORAGE
 
@@ -696,49 +692,49 @@ def run_bot(tg_token):
                     Filters.regex('^Забронировать$'),
                     handle_confirm_booking
                 ),
-       
+
             ],
             States.INPUT_SURNAME: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_input_surname
                 ),
-       
+
             ],
             States.INPUT_NAME: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_input_name
                 ),
-       
+
             ],
             States.INPUT_SECOND_NAME: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_input_second_name
                 ),
-       
+
             ],
             States.INPUT_PASSPORT: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_input_passport
                 ),
-       
+
             ],
             States.INPUT_BIRTH_DATE: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_input_birth_date
                 ),
-       
+
             ],
             States.INPUT_PHONE: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_input_phone
                 ),
-       
+
             ],
             States.CLIENT_VERIFY: [
                 MessageHandler(
@@ -769,14 +765,14 @@ def run_bot(tg_token):
                     Filters.regex('^Оплатить'),
                     handle_add_client_to_db
                 ),
-       
+
             ],
             States.REMOVE_CLIENT_INFO: [
                 MessageHandler(
                     Filters.text & ~Filters.command,
                     handle_remove_client_info
                 ),
-       
+
             ],
             States.PAYMENT: [
                 MessageHandler(
@@ -787,19 +783,18 @@ def run_bot(tg_token):
         },
         fallbacks=[
             CommandHandler('start', start),
-            MessageHandler(Filters.regex('^Отмена$'), handle_cancel), 
+            MessageHandler(Filters.regex('^Отмена$'), handle_cancel),
             MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
     )
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
-    
+
     updater.start_polling()
     updater.idle()
 
 
 def main():
-    
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
