@@ -372,3 +372,40 @@ def copy_client_to_current(client_id):
         client
     )
     logger.info(f'Load client {client_id} data to current client to verify')
+
+
+def get_client_bookings(client_id):
+    db = get_database_connection()
+    if db.jsonget('clients', Path(f'.{client_id}')):
+        bookings = db.jsonget('bookings', Path.rootPath())
+        client_bookings = dict()
+        for booking_id, booking in bookings.items():
+            if booking['client_id'] == str(client_id):
+                client_bookings[booking_id] = booking
+        return client_bookings
+    return None
+
+
+def create_bookings_message(client_bookings):
+    db = get_database_connection()
+    prices = db.jsonget('prices', Path.rootPath())
+    message_text = 'Список ваших бронирований:'
+    for booking_id, booking in client_bookings.items():
+        storage = db.jsonget('storages', Path(f'.{booking["storage_id"]}'))
+        if booking['category'] == 'other':
+            message = (
+                f'\n\nИдентификационный номер заказа: {booking_id}\nПо адресу'
+                f' {storage["address"]} с {booking["start_date"]} '
+                f'по {booking["end_date"]} хранятся '
+                f'ваши вещи на площади в {booking["count"]} кв.м.'
+            )
+        if booking['category'] == 'season':
+            message = (
+                f'\n\nИдентификационный номер заказа: {booking_id}\nПо адресу'
+                f' {storage["address"]} с {booking["start_date"]} '
+                f'по {booking["end_date"]} хранится '
+                f'позиция "{prices["season"][booking["item_id"]]["name"]}" в'
+                f' количестве {booking["count"]} штук(и).'
+            )
+        message_text += message
+    return message_text
