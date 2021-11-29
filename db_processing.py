@@ -27,171 +27,14 @@ def get_database_connection():
     return _database
 
 
-def create_storages_keyboard():
+def get_storages():
     db = get_database_connection()
-    storages = db.jsonget('storages', Path.rootPath())
-    keyboard = []
-    for storage_id, storage in storages.items():
-        keyboard.append(
-            [
-                KeyboardButton(
-                    text=(f'{storage_id}. {storage["name"]}'
-                          f'({storage["address"]})')
-                ),
-            ],
-        )
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
+    return db.jsonget('storages', Path.rootPath())
 
 
-def create_categories_keyboard():
-    keyboard = [
-        [KeyboardButton(text='Сезонные вещи')],
-        [KeyboardButton(text='Другое')],
-    ]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_other_keyboard(storage_id):
+def get_prices_by_category(category):
     db = get_database_connection()
-    category_stuffs = db.jsonget('prices', Path('.other'))
-
-    keyboard = []
-    text_template = '''\
-        {id}. {name} - {base_price} руб.
-        (за каждый доп. кв. м. + {add_price} руб.)
-        Мест на складе: {free_cells_count} кв.м.
-        '''
-    for stuff_id, stuff in category_stuffs.items():
-        free_cells_count = get_free_cells_count(storage_id, 'other', stuff_id)
-        button_caption = text_template.format(
-            id=stuff_id,
-            name=stuff['name'],
-            base_price=stuff['base_price'],
-            add_price=stuff['add_one_price'],
-            free_cells_count=free_cells_count,
-        )
-        keyboard.append(
-            [KeyboardButton(text=dedent(button_caption))],
-        )
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_season_keyboard(storage_id):
-    db = get_database_connection()
-    category_stuffs = db.jsonget('prices', Path('.season'))
-
-    keyboard = []
-    week_template = '''\
-        {id}. {name} 
-        {week_price} руб. в неделю или {month_price} руб. в месяц
-        Мест на складе: {free_cells_count}
-        '''
-    month_template = '''\
-        {id}. {name} 
-        {month_price} руб. в месяц
-        Мест на складе: {free_cells_count}
-        '''
-    for stuff_id, stuff in category_stuffs.items():
-        free_cells_count = get_free_cells_count(storage_id, 'season', stuff_id)
-        if stuff["price"]["week"]:
-            button_caption = week_template.format(
-                id=stuff_id,
-                name=stuff["name"],
-                week_price=stuff["price"]["week"],
-                month_price=stuff["price"]["month"],
-                free_cells_count=free_cells_count,
-            )
-        else:
-            button_caption = month_template.format(
-                id=stuff_id,
-                name=stuff["name"],
-                month_price=stuff["price"]["month"],
-                free_cells_count=free_cells_count,
-            )
-        keyboard.append([KeyboardButton(text=dedent(button_caption))])
-
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_other_storage_keyboard():
-    keyboard = [[
-        KeyboardButton(text='Выбрать другой склад'),
-    ]]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_period_keyboard():
-    keyboard = [[
-        KeyboardButton(text='Неделя'),
-        KeyboardButton(text='Месяц'),
-    ]]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_booking_keyboard():
-    keyboard = [
-        [KeyboardButton(text='Ввести промокод')],
-        [KeyboardButton(text='Забронировать')],
-        [KeyboardButton(text='Отмена')],
-    ]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
-
-
-def create_payment_keyboard(booking_id):
-    db = get_database_connection()
-    discounted_price = db.jsonget('bookings', Path(f'.{booking_id}.discounted_price'))
-
-    keyboard = [
-        [KeyboardButton(text=f'Оплатить {discounted_price} руб.')],
-        [KeyboardButton(text='Сменить фамилию')],
-        [KeyboardButton(text='Сменить имя')],
-        [KeyboardButton(text='Сменить отчество')],
-        [KeyboardButton(text='Сменить паспорт')],
-        [KeyboardButton(text='Сменить дату рождения')],
-        [KeyboardButton(text='Сменить номер телефона')],
-        [KeyboardButton(text='Отмена')],
-    ]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return reply_markup
+    return db.jsonget('prices', Path(f'.{category}'))
 
 
 def get_bookings_max_id():
@@ -307,6 +150,11 @@ def create_booking_message(booking):
         promo_code=booking['promo_code'],
     )
     return dedent(message_text)
+
+
+def get_discounted_price(booking_id):   
+    db = get_database_connection()
+    return db.jsonget('bookings', Path(f'.{booking_id}.discounted_price'))
 
 
 def get_passport(client_id):
