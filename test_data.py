@@ -260,6 +260,9 @@ def print_db_content(db):
     pprint(prices['season'])
     print("--- Другое ---")    
     pprint(prices['other'])
+    free_cells = db.jsonget('free_cells', Path.rootPath())
+    print("\nСвободные ячейки для хранения")
+    pprint(free_cells)   
 
 
 def load_test_data_to_db(db):
