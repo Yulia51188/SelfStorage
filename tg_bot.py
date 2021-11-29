@@ -89,6 +89,15 @@ def handle_storage_choice(update, context):
     return States.CHOOSE_CATEGORY
 
 
+def handle_other_storage(update, context):
+    db_processing.clear_client_booking(update.message.chat_id)
+    update.message.reply_text(
+        'Выберите, какой склад вам подходит:',
+        reply_markup=db_processing.create_storages_keyboard()
+    )
+    return States.CHOOSE_STORAGE
+
+
 def handle_season_choice(update, context):
     db_processing.add_category_to_booking(
         update.message.chat_id,
@@ -143,8 +152,25 @@ def handle_input_count(update, context):
         update.message.chat_id,
         update.message.text,
     )
+    is_other = current_booking['category'] == 'other'
+    units = is_other and 'кв.м.' or 'мест'
 
     input_count = int(update.message.text)
+
+    max_count = db_processing.get_free_cells_count(
+        current_booking['storage_id'],
+        current_booking['category'],
+        current_booking['item_id'],
+    )
+    if input_count > max_count:
+        update.message.reply_text(
+            dedent(f'''\
+                На складе осталось {max_count} {units}.
+                Введите другое количество или выберите другой склад'''),
+            reply_markup=db_processing.create_other_storage_keyboard()
+        )
+        return States.INPUT_COUNT
+
     if input_count < 1 or input_count > 10:
         if current_booking['category'] == 'other':
             message_begin = ('В бронировании площадь ячейки может быть указана'
@@ -731,6 +757,10 @@ def run_bot(tg_token):
                 )
             ],
             States.INPUT_COUNT: [
+                MessageHandler(
+                    Filters.regex('^Выбрать другой склад$'),
+                    handle_other_storage
+                ),
                 MessageHandler(
                     Filters.regex(r'^[0-9]+$'),
                     handle_input_count
