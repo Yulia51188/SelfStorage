@@ -6,11 +6,12 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from telegram import LabeledPrice
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
-                          MessageHandler, Updater, PreCheckoutQueryHandler)
+                          MessageHandler, PreCheckoutQueryHandler, Updater)
 
 import access_qrcode as qr
 import check_input
 import db_processing
+import keyboards
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ def start(update, context):
         Я помогу вам арендовать личную ячейку для хранения вещей.
         Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!
         '''),
-        reply_markup=db_processing.create_storages_keyboard()
+        reply_markup=keyboards.create_storages_keyboard()
     )
 
     return States.CHOOSE_STORAGE
@@ -72,7 +73,7 @@ def handle_cancel(update, context):
 
     update.message.reply_text(
         'Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!',
-        reply_markup=db_processing.create_storages_keyboard()
+        reply_markup=keyboards.create_storages_keyboard()
     )
     return States.CHOOSE_STORAGE
 
@@ -84,7 +85,7 @@ def handle_storage_choice(update, context):
     )
     update.message.reply_text(
         'Что хотите хранить?',
-        reply_markup=db_processing.create_categories_keyboard()
+        reply_markup=keyboards.create_categories_keyboard()
     )
     return States.CHOOSE_CATEGORY
 
@@ -93,7 +94,7 @@ def handle_other_storage(update, context):
     db_processing.clear_client_booking(update.message.chat_id)
     update.message.reply_text(
         'Выберите, какой склад вам подходит:',
-        reply_markup=db_processing.create_storages_keyboard()
+        reply_markup=keyboards.create_storages_keyboard()
     )
     return States.CHOOSE_STORAGE
 
@@ -108,7 +109,7 @@ def handle_season_choice(update, context):
     )
     update.message.reply_text(
         'Выберите, вещи какого типа будете хранить',
-        reply_markup=db_processing.create_season_keyboard(
+        reply_markup=keyboards.create_season_keyboard(
             current_booking['storage_id']
         )
     )
@@ -125,7 +126,7 @@ def handle_other_choice(update, context):
     )
     update.message.reply_text(
         'Выберите тип ячейки для хранения',
-        reply_markup=db_processing.create_other_keyboard(
+        reply_markup=keyboards.create_other_keyboard(
             current_booking['storage_id']
         )
     )
@@ -167,7 +168,7 @@ def handle_input_count(update, context):
             dedent(f'''\
                 На складе осталось {max_count} {units}.
                 Введите другое количество или выберите другой склад'''),
-            reply_markup=db_processing.create_other_storage_keyboard()
+            reply_markup=keyboards.create_other_storage_keyboard()
         )
         return States.INPUT_COUNT
 
@@ -187,7 +188,7 @@ def handle_input_count(update, context):
     if is_week:
         update.message.reply_text(
             'Выберите, в чем будет измерятся период хранения: недели или месяцы?',
-            reply_markup=db_processing.create_period_keyboard()
+            reply_markup=keyboards.create_period_keyboard()
         )
         return States.INPUT_PERIOD_TYPE
 
@@ -260,7 +261,7 @@ def handle_confirm_booking(update, context):
     )
     update.message.reply_text(
         db_processing.create_booking_message(current_booking),
-        reply_markup=db_processing.create_booking_keyboard()
+        reply_markup=keyboards.create_booking_keyboard()
     )
 
     return States.CONFIRM_BOOKING
@@ -498,7 +499,7 @@ def handle_client_verify(update, context):
             нажав соответствующую кнопку.
             
             Если все введено верно, нажмите кнопку "Оплата"'''),
-        reply_markup=db_processing.create_payment_keyboard(
+        reply_markup=keyboards.create_payment_keyboard(
             current_booking['booking_id'])
     )
 
