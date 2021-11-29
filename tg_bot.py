@@ -57,6 +57,18 @@ def start(update, context):
     return States.CHOOSE_STORAGE
 
 
+def handle_client_bookings(update, context):
+    client_id = update.message.chat_id
+    client_bookings = db_processing.get_client_bookings(client_id)
+    if client_bookings is None:
+        message_text = 'У вас пока нет арендованных ячеек.'
+    else:
+        message_text = db_processing.create_bookings_message(client_bookings)
+    context.bot.send_message(chat_id=client_id, text=message_text)
+
+    return handle_cancel(update, context)
+
+
 def echo(update, context):
     update.message.reply_text(update.message.text)
 
@@ -748,7 +760,10 @@ def run_bot(tg_token):
     dispatcher = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[
+            CommandHandler('start', start),
+            CommandHandler('bookings', handle_client_bookings),
+        ],
         states={
             States.CHOOSE_STORAGE: [
                 MessageHandler(
@@ -905,6 +920,7 @@ def run_bot(tg_token):
         },
         fallbacks=[
             CommandHandler('start', start),
+            CommandHandler('bookings', handle_client_bookings),
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel),
             MessageHandler(Filters.text & ~Filters.command, handle_unknown)
         ],
