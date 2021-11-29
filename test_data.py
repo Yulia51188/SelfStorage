@@ -265,11 +265,13 @@ def print_db_content(db):
     pprint(free_cells)   
 
 
-def load_test_data_to_db(db):
+def load_test_data_to_db(db, rewrite_bot_results=False):
     db.jsonset('storages', Path.rootPath(), STORAGES)    
     db.jsonset('prices', Path.rootPath(), PRICES)
-    db.jsonset('bookings', Path.rootPath(), BOOKINGS)
-    db.jsonset('clients', Path.rootPath(), CLIENTS)
+    db.jsonset('free_cells', Path.rootPath(), FREE_CELLS)
+    if rewrite_bot_results:
+        db.jsonset('bookings', Path.rootPath(), BOOKINGS)
+        db.jsonset('clients', Path.rootPath(), CLIENTS)
 
 
 def main():
