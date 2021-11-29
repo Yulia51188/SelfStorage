@@ -1,12 +1,11 @@
 import logging
 import os
-from datetime import timedelta, date
+from datetime import date, timedelta
 from textwrap import dedent
 
 from dateutil.relativedelta import relativedelta
-from rejson import Client, Path
-from telegram import ReplyKeyboardMarkup, KeyboardButton
 from redis.exceptions import ResponseError
+from rejson import Client, Path
 
 logger = logging.getLogger(__name__)
 _database = None

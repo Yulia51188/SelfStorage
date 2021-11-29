@@ -1,20 +1,14 @@
 import os
 from pprint import pprint
+
 from dotenv import load_dotenv
 from rejson import Client, Path
-
-from telegram import LabeledPrice, ShippingOption, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    PreCheckoutQueryHandler,
-    ShippingQueryHandler,
-    CallbackContext,
-    CallbackQueryHandler,
-)
-
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice,
+                      ShippingOption, Update)
+from telegram.ext import (CallbackContext, CallbackQueryHandler,
+                          CommandHandler, Filters, MessageHandler,
+                          PreCheckoutQueryHandler, ShippingQueryHandler,
+                          Updater)
 
 _booking = {
         'booking_id': '1',
