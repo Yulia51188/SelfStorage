@@ -6,6 +6,7 @@ from textwrap import dedent
 from dateutil.relativedelta import relativedelta
 from rejson import Client, Path
 from telegram import ReplyKeyboardMarkup, KeyboardButton
+from redis.exceptions import ResponseError
 
 logger = logging.getLogger(__name__)
 _database = None
@@ -61,21 +62,24 @@ def create_categories_keyboard():
     return reply_markup
 
 
-def create_other_keyboard():
+def create_other_keyboard(storage_id):
     db = get_database_connection()
     category_stuffs = db.jsonget('prices', Path('.other'))
 
     keyboard = []
     text_template = '''\
-        {id}. {name} - {base_price} руб. 
+        {id}. {name} - {base_price} руб.
         (за каждый доп. кв. м. + {add_price} руб.)
+        Мест на складе: {free_cells_count}
         '''
     for stuff_id, stuff in category_stuffs.items():
+        free_cells_count = get_free_cells_count(storage_id, 'other', stuff_id)
         button_caption = text_template.format(
             id=stuff_id,
             name=stuff['name'],
             base_price=stuff['base_price'],
             add_price=stuff['add_one_price'],
+            free_cells_count=free_cells_count,
         )
         keyboard.append(
             [KeyboardButton(text=dedent(button_caption))],
@@ -88,7 +92,7 @@ def create_other_keyboard():
     return reply_markup
 
 
-def create_season_keyboard():
+def create_season_keyboard(storage_id):
     db = get_database_connection()
     category_stuffs = db.jsonget('prices', Path('.season'))
 
@@ -96,24 +100,29 @@ def create_season_keyboard():
     week_template = '''\
         {id}. {name} 
         {week_price} руб. в неделю или {month_price} руб. в месяц
+        Мест на складе: {free_cells_count}
         '''
     month_template = '''\
         {id}. {name} 
         {month_price} руб. в месяц
+        Мест на складе: {free_cells_count}
         '''
     for stuff_id, stuff in category_stuffs.items():
+        free_cells_count = get_free_cells_count(storage_id, 'season', stuff_id)
         if stuff["price"]["week"]:
             button_caption = week_template.format(
                 id=stuff_id,
                 name=stuff["name"],
                 week_price=stuff["price"]["week"],
                 month_price=stuff["price"]["month"],
+                free_cells_count=free_cells_count,
             )
         else:
             button_caption = month_template.format(
                 id=stuff_id,
                 name=stuff["name"],
                 month_price=stuff["price"]["month"],
+                free_cells_count=free_cells_count,
             )
         keyboard.append([KeyboardButton(text=dedent(button_caption))])
 
@@ -456,3 +465,15 @@ def client_param_type(client_id):
     for param, value in current_client.items():
         if not value:
             return param
+
+
+def get_free_cells_count(storage_id, category, item_id):
+    db = get_database_connection()
+    try:
+        free_cells_count = db.jsonget(
+            'free_cells',
+            Path(f'.storage_{storage_id}.{category}.item_{item_id}'),
+        )
+        return free_cells_count['free']
+    except ResponseError:
+        return 0

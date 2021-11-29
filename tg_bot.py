@@ -94,9 +94,14 @@ def handle_season_choice(update, context):
         update.message.chat_id,
         'season',
     )
+    current_booking = db_processing.get_client_current_booking(
+        update.message.chat_id
+    )
     update.message.reply_text(
         'Выберите, вещи какого типа будете хранить',
-        reply_markup=db_processing.create_season_keyboard()
+        reply_markup=db_processing.create_season_keyboard(
+            current_booking['storage_id']
+        )
     )
     return States.CHOOSE_STUFF
 
@@ -106,9 +111,14 @@ def handle_other_choice(update, context):
         update.message.chat_id,
         'other',
     )
+    current_booking = db_processing.get_client_current_booking(
+        update.message.chat_id
+    )
     update.message.reply_text(
         'Выберите тип ячейки для хранения',
-        reply_markup=db_processing.create_other_keyboard()
+        reply_markup=db_processing.create_other_keyboard(
+            current_booking['storage_id']
+        )
     )
     return States.CHOOSE_STUFF
 
