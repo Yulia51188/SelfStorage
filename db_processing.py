@@ -70,7 +70,7 @@ def create_other_keyboard(storage_id):
     text_template = '''\
         {id}. {name} - {base_price} руб.
         (за каждый доп. кв. м. + {add_price} руб.)
-        Мест на складе: {free_cells_count}
+        Мест на складе: {free_cells_count} кв.м.
         '''
     for stuff_id, stuff in category_stuffs.items():
         free_cells_count = get_free_cells_count(storage_id, 'other', stuff_id)

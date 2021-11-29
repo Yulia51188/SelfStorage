@@ -147,9 +147,11 @@ def handle_input_count(update, context):
     input_count = int(update.message.text)
     if input_count < 1 or input_count > 10:
         if current_booking['category'] == 'other':
-            message_begin = 'Доступная площадь ячейки от 1 до 10 кв.м.'
+            message_begin = ('В бронировании площадь ячейки может быть указана'
+                             ' от 1 до 10 кв.м.')
         else:
-            message_begin = 'Доступное количество вещей от 1 до 10.'
+            message_begin = ('Доступное количество ячеек для вещей в одном '
+                             'бронировании - от 1 до 10 шт.')
 
         update.message.reply_text(f'{message_begin} Введите еще раз')
         return States.INPUT_COUNT
