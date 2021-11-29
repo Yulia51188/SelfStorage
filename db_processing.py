@@ -484,8 +484,8 @@ def get_free_cells_count(storage_id, category, item_id):
     try:
         free_cells_count = db.jsonget(
             'free_cells',
-            Path(f'.storage_{storage_id}.{category}.item_{item_id}'),
+            Path(f'.storage_{storage_id}.{category}.item_{item_id}.free'),
         )
-        return free_cells_count['free']
+        return free_cells_count
     except ResponseError:
         return 0
