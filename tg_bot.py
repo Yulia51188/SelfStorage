@@ -723,6 +723,13 @@ def successful_payment_callback(update, context):
 
     update.message.reply_text('Оплата прошла успешно')
 
+    db_processing.update_free_cells_count(
+        current_booking['storage_id'],
+        current_booking['category'],
+        current_booking['item_id'],    
+        current_booking['count'],
+    )
+
     handle_qrcode(update, context)
     return States.CHOOSE_STORAGE
 

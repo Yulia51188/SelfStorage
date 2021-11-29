@@ -489,3 +489,13 @@ def get_free_cells_count(storage_id, category, item_id):
         return free_cells_count
     except ResponseError:
         return 0
+
+
+def update_free_cells_count(storage_id, category, item_id, count_reserved):
+    previous_count = get_free_cells_count(storage_id, category, item_id)
+    db = get_database_connection()       
+    db.jsonset(
+        'free_cells',
+        Path(f'.storage_{storage_id}.{category}.item_{item_id}.free'),
+        previous_count - count_reserved,
+    )
