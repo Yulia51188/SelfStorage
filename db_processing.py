@@ -346,3 +346,29 @@ def update_free_cells_count(storage_id, category, item_id, count_reserved):
         Path(f'.storage_{storage_id}.{category}.item_{item_id}.free'),
         previous_count - count_reserved,
     )
+
+
+def is_client_exists(client_id):
+    db = get_database_connection()
+    try:
+        db.jsonget(
+            'clients',
+            Path(f'.{client_id}'),
+        )  
+        return True      
+    except ResponseError:
+        return None
+
+
+def copy_client_to_current(client_id):
+    db = get_database_connection()       
+    client = db.jsonget(
+        'clients',
+        Path(f'.{client_id}'),
+    ) 
+    db.jsonset(
+        f'c{client_id}',
+        Path.rootPath(),
+        client
+    )
+    logger.info(f'Load client {client_id} data to current client to verify')

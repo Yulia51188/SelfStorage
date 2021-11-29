@@ -321,6 +321,12 @@ def handle_start_input_full_name(update, context):
         booking_id,
     )
 
+    is_client_exists = db_processing.is_client_exists(client_id)
+    if is_client_exists:
+        db_processing.copy_client_to_current(client_id)
+        handle_client_verify(update, context)
+        return States.CLIENT_VERIFY
+
     update.message.reply_text(
         dedent(f'''\
             Бронирование подтверждено.
@@ -330,8 +336,8 @@ def handle_start_input_full_name(update, context):
             
             Введите вашу Фамилию'''),
     )
+    
     db_processing.create_new_client(client_id)
-
     return States.INPUT_SURNAME
 
 
