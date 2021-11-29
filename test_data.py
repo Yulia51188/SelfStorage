@@ -67,6 +67,110 @@ PRICES = {
     }
 }
 
+FREE_CELLS = {
+    'storage_1': {
+        'season': {
+            'item_1': {
+                'total': 20,
+                'free': 16,
+            },
+            'item_2': {
+                'total': 10,
+                'free': 9,
+            },
+            'item_3': {
+                'total': 15,
+                'free': 12,
+            },
+            'item_4': {
+                'total': 10,
+                'free': 10,
+            },
+        },
+        'other': {
+            'item_1': {
+                'total': 100,
+                'free': 92,
+            },
+        },
+    },
+    'storage_2': {
+        'season': {
+            'item_1': {
+                'total': 20,
+                'free': 16,
+            },
+            'item_3': {
+                'total': 15,
+                'free': 12,
+            },
+            'item_4': {
+                'total': 10,
+                'free': 10,
+            },
+        },
+        'other': {
+            'item_1': {
+                'total': 50,
+                'free': 50,
+            },
+        },
+    },
+    'storage_3': {
+        'season': {
+            'item_1': {
+                'total': 20,
+                'free': 16,
+            },
+            'item_2': {
+                'total': 10,
+                'free': 9,
+            },
+            'item_3': {
+                'total': 15,
+                'free': 12,
+            },
+            'item_4': {
+                'total': 5,
+                'free': 0,
+            },
+        },
+        'other': {
+            'item_1': {
+                'total': 100,
+                'free': 92,
+            },
+        },
+    },
+    'storage_4': {
+        'season': {
+            'item_1': {
+                'total': 20,
+                'free': 18,
+            },
+            'item_2': {
+                'total': 10,
+                'free': 7,
+            },
+            'item_3': {
+                'total': 18,
+                'free': 15,
+            },
+            'item_4': {
+                'total': 15,
+                'free': 7,
+            },
+        },
+        'other': {
+            'item_1': {
+                'total': 150,
+                'free': 89,
+            },
+        },
+    },
+
+
+}
 
 BOOKINGS = {
     '1': {
