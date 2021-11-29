@@ -50,6 +50,7 @@ def start(update, context):
         Привет!
         Я помогу вам арендовать личную ячейку для хранения вещей.
         Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!
+        Посмотреть список арендованных вами ячеек можно командой /bookings
         '''),
         reply_markup=keyboards.create_storages_keyboard()
     )
@@ -84,7 +85,10 @@ def handle_cancel(update, context):
     db_processing.clear_current_client(update.message.chat_id)
 
     update.message.reply_text(
-        'Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!',
+        '''
+        Давайте посмотрим адреса складов в Москве, чтобы выбрать ближайший!
+        Посмотреть список арендованных вами ячеек можно командой /bookings
+        ''',
         reply_markup=keyboards.create_storages_keyboard()
     )
     return States.CHOOSE_STORAGE
